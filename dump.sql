@@ -1,0 +1,4 @@
+CREATE TABLE funcionarios (
+    nome VARCHAR(100) NOT NULL,
+    cpf VARCHAR(11) UNIQUE NOT NULL PRIMARY KEY
+);
