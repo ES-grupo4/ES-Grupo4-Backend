@@ -5,3 +5,4 @@
 # Rodando
 - Modo dev com `uv run fastapi dev`
 - Modo produção com `uv run fastapi run`
+- Testes com `uv run -m unittest`
