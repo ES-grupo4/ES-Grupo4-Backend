@@ -1,10 +1,7 @@
 from fastapi import FastAPI
 
+from .routers.funcionario import funcionarios_router
+
+
 app = FastAPI()
-
-
-# Sempre preencham summary e tags
-# Tags fazem sentido de ir nos APIRouter tmb
-@app.get("/", summary="Te dá oi", tags=["Tag foda"])
-def root():
-    return {"message": "Hello world"}
+app.include_router(funcionarios_router)
