@@ -101,3 +101,21 @@ def editar_cliente(cpf: str, dados: ClienteEdit, db: conexao_bd):
     db.flush()
     db.refresh(cliente)
     return cliente
+
+
+@cliente_router.get(
+    "/{cpf}",
+    summary="Busca um cliente pelo CPF",
+    response_model=ClienteOut,
+)
+def buscar_cliente(cpf: str, db: conexao_bd):
+    """
+    Retorna os dados de um cliente a partir do CPF.
+    """
+    cliente = db.scalar(select(Cliente).where(Cliente.cpf == cpf))
+    if not cliente:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Cliente não encontrado"
+        )
+    return cliente
