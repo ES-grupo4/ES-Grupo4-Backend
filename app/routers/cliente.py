@@ -1,15 +1,16 @@
+from ..schemas.cliente import ClienteEdit
 from fastapi import APIRouter, status, HTTPException
 from sqlalchemy import select
-from sqlalchemy.orm import Session
-
 from ..models.models import Cliente
 from ..models.db_setup import conexao_bd
 from ..schemas.cliente import ClienteIn, ClienteOut
+
 
 cliente_router = APIRouter(
     prefix="/cliente",
     tags=["Cliente"],
 )
+
 
 @cliente_router.post(
     "/",
@@ -55,3 +56,48 @@ def listar_clientes(db: conexao_bd):
     """
     clientes = db.scalars(select(Cliente)).all()
     return clientes
+
+
+@cliente_router.delete(
+    "/{cpf}",
+    summary="Remove um cliente pelo CPF",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def remover_cliente(cpf: str, db: conexao_bd):
+    """
+    Remove um cliente do sistema a partir do CPF.
+    """
+    cliente = db.scalar(select(Cliente).where(Cliente.cpf == cpf))
+    if not cliente:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Cliente não encontrado"
+        )
+
+    db.delete(cliente)
+    db.flush()
+
+
+@cliente_router.patch(
+    "/{cpf}",
+    summary="Edita os dados de um cliente pelo CPF",
+    response_model=ClienteOut,
+)
+def editar_cliente(cpf: str, dados: ClienteEdit, db: conexao_bd):
+    """
+    Edita os dados de um cliente existente, exceto CPF, ID e tipo.
+    """
+    cliente = db.scalar(select(Cliente).where(Cliente.cpf == cpf))
+    if not cliente:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Cliente não encontrado"
+        )
+
+    # Atualiza apenas os campos fornecidos
+    for campo, valor in dados.dict(exclude_unset=True).items():
+        setattr(cliente, campo, valor)
+
+    db.flush()
+    db.refresh(cliente)
+    return cliente
