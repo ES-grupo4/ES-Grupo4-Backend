@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, status, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -32,9 +32,6 @@ def cria_cliente(cliente: ClienteIn, db: conexao_bd):
     novo = Cliente(
         cpf=cliente.cpf,
         nome=cliente.nome,
-        senha=cliente.senha,
-        email=cliente.email,
-        subtipo="cliente",
         matricula=cliente.matricula,
         tipo=cliente.tipo,
         graduando=cliente.graduando,
@@ -42,7 +39,7 @@ def cria_cliente(cliente: ClienteIn, db: conexao_bd):
         bolsista=cliente.bolsista,
     )
     db.add(novo)
-    db.commit()
+    db.flush()
     db.refresh(novo)
     return novo
 

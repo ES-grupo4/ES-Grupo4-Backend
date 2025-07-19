@@ -1,11 +1,10 @@
-from pydantic import BaseModel, ConfigDict
+from typing import Annotated
+from pydantic import BaseModel, StringConstraints
 
 
 class ClienteIn(BaseModel):
-    cpf: str
+    cpf: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=11)]
     nome: str
-    senha: str
-    email: str
     matricula: str
     tipo: str
     graduando: bool
@@ -23,5 +22,3 @@ class ClienteOut(BaseModel):
     graduando: bool
     pos_graduando: bool
     bolsista: bool
-
-    model_config = ConfigDict(from_attributes=True)
