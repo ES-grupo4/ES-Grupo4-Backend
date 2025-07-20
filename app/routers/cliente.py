@@ -1,10 +1,9 @@
-from ..schemas.cliente import ClienteEdit
-from fastapi import APIRouter, status, HTTPException
+from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
-from ..models.models import Cliente
-from ..models.db_setup import conexao_bd
-from ..schemas.cliente import ClienteIn, ClienteOut
 
+from ..models.db_setup import conexao_bd
+from ..models.models import Cliente
+from ..schemas.cliente import ClienteEdit, ClienteIn, ClienteOut
 
 cliente_router = APIRouter(
     prefix="/cliente",
@@ -22,13 +21,6 @@ def cria_cliente(cliente: ClienteIn, db: conexao_bd):
     """
     Cria um cliente no sistema.
     """
-    # Verifica se já existe um cliente com o mesmo CPF
-    existing = db.scalar(select(Cliente).where(Cliente.cpf == cliente.cpf))
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="CPF já cadastrado"
-        )
 
     novo = Cliente(
         cpf=cliente.cpf,
@@ -47,8 +39,8 @@ def cria_cliente(cliente: ClienteIn, db: conexao_bd):
 
 @cliente_router.get(
     "/",
-    summary="Pega todos os clientes", 
-    response_model=list[ClienteOut]
+    summary="Pega todos os clientes",
+    response_model=list[ClienteOut],
 )
 def listar_clientes(db: conexao_bd):
     """
@@ -71,7 +63,7 @@ def remover_cliente(cpf: str, db: conexao_bd):
     if not cliente:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cliente não encontrado"
+            detail="Cliente não encontrado",
         )
 
     db.delete(cliente)
@@ -91,7 +83,7 @@ def editar_cliente(cpf: str, dados: ClienteEdit, db: conexao_bd):
     if not cliente:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cliente não encontrado"
+            detail="Cliente não encontrado",
         )
 
     # Atualiza apenas os campos fornecidos
@@ -116,6 +108,6 @@ def buscar_cliente(cpf: str, db: conexao_bd):
     if not cliente:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cliente não encontrado"
+            detail="Cliente não encontrado",
         )
     return cliente

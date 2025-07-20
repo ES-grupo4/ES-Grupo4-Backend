@@ -10,13 +10,15 @@ class ClienteTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        session = bd_session()
-        session.query(Cliente).delete()
-        session.commit()
-        session.close()
+        cls.session = bd_session()
+
+        # Remove apenas o cliente de CPF do setup, se existir
+        cpf_setup = "12345678901"
+        cls.session.query(Cliente).filter(Cliente.cpf == cpf_setup).delete()
+        cls.session.commit()
 
         cls.setup_payload = {
-            "cpf": "12345678901",
+            "cpf": cpf_setup,
             "nome": "Cliente Setup",
             "matricula": "20240001",
             "tipo": "aluno",
@@ -29,6 +31,12 @@ class ClienteTestCase(unittest.TestCase):
         cls.setup_response_data = response.json()
         cls.setup_status_code = response.status_code
 
+    @classmethod
+    def tearDownClass(cls):
+        # Remove o cliente criado no setup
+        cls.session.query(Cliente).filter(Cliente.cpf == cls.setup_payload["cpf"]).delete()
+        cls.session.commit()
+        cls.session.close()
 
     # ---------------------------------- #
     def test_cria_cliente(self):
@@ -55,6 +63,11 @@ class ClienteTestCase(unittest.TestCase):
         self.assertEqual(data["bolsista"], payload["bolsista"])
         self.assertIn("id", data)
 
+        # Limpeza após o teste
+        session = bd_session()
+        session.query(Cliente).filter(Cliente.cpf == payload["cpf"]).delete()
+        session.commit()
+        session.close()
 
     # ---------------------------------- #
     def test_busca_cliente_criado_no_setup(self):
@@ -72,7 +85,6 @@ class ClienteTestCase(unittest.TestCase):
         self.assertEqual(data["bolsista"], self.setup_payload["bolsista"])
         self.assertIn("id", data)
 
-
     # ---------------------------------- #
     def test_listar_clientes(self):
         response = client.get("/cliente/")
@@ -85,19 +97,27 @@ class ClienteTestCase(unittest.TestCase):
         cpfs = [cliente["cpf"] for cliente in data]
         self.assertIn(self.setup_payload["cpf"], cpfs)
 
-
     # ---------------------------------- #
     def test_remove_cliente(self):
-        cpf = self.setup_payload["cpf"]
+        # Criar cliente temporário para remoção
+        payload = {
+            "cpf": "88888888888",
+            "nome": "Cliente Removido",
+            "matricula": "20248888",
+            "tipo": "aluno",
+            "graduando": False,
+            "pos_graduando": False,
+            "bolsista": False
+        }
+        client.post("/cliente/", json=payload)
 
         # Remove o cliente
-        response = client.delete(f"/cliente/{cpf}")
+        response = client.delete(f"/cliente/{payload['cpf']}")
         self.assertEqual(response.status_code, 204)
 
         # Tenta buscar o cliente removido, deve retornar 404
-        response_busca = client.get(f"/cliente/{cpf}")
+        response_busca = client.get(f"/cliente/{payload['cpf']}")
         self.assertEqual(response_busca.status_code, 404)
-
 
     # ---------------------------------- #
     def test_cria_cliente_com_cpf_duplicado(self):
