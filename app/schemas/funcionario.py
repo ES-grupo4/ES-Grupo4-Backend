@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class FuncionarioOut(BaseModel):
@@ -11,3 +11,23 @@ class FuncionarioOut(BaseModel):
     cpf: str
     email: str
     subtipo: str
+
+
+class FuncionarioIn(BaseModel):
+    cpf: str
+    nome: str
+    senha: str
+    email: str
+    tipo: str
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "cpf": "12345678910",
+                "nome": "John Doe",
+                "senha": "John123!",
+                "email": "john@doe.com",
+                "tipo": "admin",
+            }
+        }
+    )
