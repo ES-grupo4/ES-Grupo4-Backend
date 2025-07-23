@@ -19,7 +19,7 @@ class FuncionarioIn(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "cpf": "12345678910",
+                "cpf": "198.965.074-06",
                 "nome": "John Doe",
                 "senha": "John123!",
                 "email": "john@doe.com",
