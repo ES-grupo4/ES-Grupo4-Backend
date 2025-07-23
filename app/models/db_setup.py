@@ -16,8 +16,14 @@ def get_bd():
      commita as mudanças se nenhum erro ocorrer e fecha a conexão depois.
     """
     bd = bd_session()
-    with bd.begin():
+    try:
         yield bd
+        bd.commit()
+    except:
+        bd.rollback()
+        raise
+    finally:
+        bd.close()
 
 
 Base.metadata.create_all(engine)
