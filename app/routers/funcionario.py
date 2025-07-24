@@ -2,14 +2,11 @@ from fastapi import APIRouter
 
 from ..models.models import Funcionario
 from ..models.db_setup import conexao_bd
-from ..schemas.funcionario import FuncionarioOut
+from ..schemas.funcionario import FuncionarioOut, FuncionarioIn
 
 from sqlalchemy import select
 
-funcionarios_router = APIRouter(
-    prefix="/funcionario",
-    tags=["Funcionário"],
-)
+funcionarios_router = APIRouter(prefix="/funcionario", tags=["Funcionário"])
 router = funcionarios_router
 
 
@@ -19,11 +16,14 @@ router = funcionarios_router
     "/{cpf}/{nome}",
     summary="Cria um funcionário",
 )
-def funcionario(cpf: str, nome: str, db: conexao_bd):
-    """
-    Imaginem que eu fiz um 'FuncionarioIn'
-    """
-    usuario = Funcionario(cpf=cpf, nome=nome, senha="a", email="a", tipo="admin")
+def funcionario(funcionario: FuncionarioIn, db: conexao_bd):
+    usuario = Funcionario(
+        cpf=funcionario.cpf,
+        nome=funcionario.nome,
+        senha=funcionario.senha,
+        email=funcionario.email,
+        tipo=funcionario.tipo,
+    )
     db.add(usuario)
     return {"message": "Funcionário criado com sucesso"}
 
