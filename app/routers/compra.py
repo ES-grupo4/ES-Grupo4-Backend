@@ -1,8 +1,6 @@
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Query
-from app.repository.database import SessionLocal
+from fastapi import APIRouter, UploadFile, File, HTTPException, Query
 import io
 import polars as pl
-from sqlalchemy.orm import Session
 from sqlalchemy import select
 from ..models.db_setup import conexao_bd
 from ..models.models import Compra
@@ -13,21 +11,13 @@ compra_router = APIRouter(prefix="/compra", tags=["Compra"])
 router = compra_router
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
 @compra_router.post(
     "/cadastra-compra",
     summary="Cadastra uma compra no sistema",
 )
 def cadastra_compra(compra: CompraIn, db: conexao_bd):
     nova_compra = Compra(
-        id=compra.usuario_id,
+        usuario_id=compra.usuario_id,
         horario=compra.horario,
         local=compra.local,
         forma_pagamento=compra.forma_pagamento,
@@ -40,9 +30,7 @@ def cadastra_compra(compra: CompraIn, db: conexao_bd):
 @compra_router.post(
     "/cadastra-compra-csv", summary="Cadastra uma compra no sistema por meio de csv"
 )
-async def cadastra_compra_csv(
-    file: UploadFile = File(...), db: Session = Depends(get_db)
-):
+async def cadastra_compra_csv(db: conexao_bd, file: UploadFile = File(...)):
     if not file.filename.endswith(".csv"):  # type: ignore
         raise HTTPException(status_code=400, detail="O arquivo deveria ser CSV.")
 
@@ -103,7 +91,7 @@ def compras(db: conexao_bd):
     response_model=list[CompraOut],
 )
 def filtra_compra(
-    coluna: str = Query(...), parametro: str = Query(...), db: Session = Depends(get_db)
+    db: conexao_bd, coluna: str = Query(...), parametro: str = Query(...)
 ):
     if not hasattr(Compra, coluna):
         raise HTTPException(status_code=400, detail=f"Coluna '{coluna}' não encontrada")
