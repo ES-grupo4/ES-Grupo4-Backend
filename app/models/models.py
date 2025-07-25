@@ -66,7 +66,7 @@ class Cliente(Usuario):
 
 class InformacoesGerais(Base):
     __tablename__ = "informacoes_gerais"
-
+    
     id: Mapped[int] = mapped_column(primary_key=True)
     nome_empresa: Mapped[str] = mapped_column(String())
     preco_almoco: Mapped[int] = mapped_column(Integer)
