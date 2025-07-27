@@ -98,3 +98,45 @@ class ClienteTestCase(unittest.TestCase):
         # Verifica que foi removido
         response = client.get(f"/cliente/{payload['cpf']}")
         self.assertEqual(response.status_code, 404)
+
+
+    def test_criar_cliente_sem_campo_obrigatorio(self):
+        payload = {
+            "cpf": "12345678999",  # falta nome
+            "matricula": "20240125",
+            "tipo": "aluno",
+            "graduando": True,
+            "pos_graduando": False,
+            "bolsista": False,
+        }
+
+        response = client.post("/cliente/", json=payload)
+        self.assertEqual(response.status_code, 422)
+
+    def test_criar_cliente_com_tipo_invalido(self):
+        payload = {
+            "cpf": "12345678977",
+            "nome": "Tipo Inválido",
+            "matricula": "20240126",
+            "tipo": "estagiario",  # tipo inválido
+            "graduando": False,
+            "pos_graduando": False,
+            "bolsista": False,
+        }
+
+        response = client.post("/cliente/", json=payload)
+        self.assertEqual(response.status_code, 422)
+
+    def test_criar_cliente_com_matricula_invalida(self):
+        payload = {
+            "cpf": "12345678988",
+            "nome": "Cliente Matrícula Inválida",
+            "matricula": "",  # campo inválido
+            "tipo": "aluno",
+            "graduando": True,
+            "pos_graduando": False,
+            "bolsista": False,
+        }
+
+        response = client.post("/cliente/", json=payload)
+        self.assertEqual(response.status_code, 422)
