@@ -261,5 +261,21 @@ class ClienteTestCase(unittest.TestCase):
         self.assertIn(response.status_code, (200, 422, 405))
 
 
+    # Testes para rotas inválidas
+
+    def test_rota_inexistente_get(self):
+        response = client.get("/clientes/")
+        self.assertEqual(response.status_code, 404)
+
+    def test_rota_inexistente_post(self):
+        response = client.post("/cliente/inexistente", json={})
+        self.assertEqual(response.status_code, 405)
+
+    def test_metodo_nao_permitido(self):
+        # POST em endpoint GET-only
+        response = client.post(f"/cliente/{'12345678901'}")
+        self.assertEqual(response.status_code, 405)
+
+
 if __name__ == '__main__':
     unittest.main()
