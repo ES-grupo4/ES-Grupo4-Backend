@@ -23,7 +23,7 @@ def cria_cliente(cliente: ClienteIn, db: conexao_bd):
     """
 
     novo = Cliente(
-        cpf=str(cliente.cpf),
+        cpf=cliente.cpf,
         nome=cliente.nome,
         matricula=cliente.matricula,
         tipo=cliente.tipo,

@@ -28,7 +28,7 @@ class ClienteIn(BaseModel):
 class ClienteOut(BaseModel):
     id: int
     nome: str
-    cpf: int
+    cpf: str
     subtipo: str
     matricula: str
     tipo: str
