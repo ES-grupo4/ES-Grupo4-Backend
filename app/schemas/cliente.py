@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Annotated
 
-from pydantic import BaseModel, StringConstraints
+from pydantic import BaseModel, StringConstraints, field_validator
 
 
 class TipoClienteEnum(str, Enum):
@@ -12,9 +12,7 @@ class TipoClienteEnum(str, Enum):
 
 
 class ClienteIn(BaseModel):
-    cpf: Annotated[
-        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=11)
-    ]
+    cpf: int
     nome: str
     matricula: Annotated[
         str, StringConstraints(strip_whitespace=True, min_length=1, max_length=9)
@@ -23,6 +21,14 @@ class ClienteIn(BaseModel):
     graduando: bool
     pos_graduando: bool
     bolsista: bool
+
+    @field_validator("cpf")
+    @classmethod
+    def cpf_deve_ter_11_digitos(cls, v: int) -> int:
+        cpf_str = str(v)
+        if len(cpf_str) != 11 or not cpf_str.isdigit():
+            raise ValueError("O CPF deve conter exatamente 11 dígitos numéricos.")
+        return v
 
 
 class ClienteOut(BaseModel):

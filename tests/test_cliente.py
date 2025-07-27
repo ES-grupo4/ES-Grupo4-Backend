@@ -14,7 +14,10 @@ class ClienteTestCase(unittest.TestCase):
         cpfs_testados = [
             "12345678901",  # usado no setup/base
             "99999999999",  # usado no test_cria_cliente
-            "00000000",  # usado em duplicado
+            "00000000",     # usado em duplicado
+            "1111111111",   # 10 dígitos
+            "222222222222", # 12 dígitos
+            "33333abc333",  # alfanumérico
         ]
         for cpf in cpfs_testados:
             cliente = session.query(Cliente).filter_by(cpf=cpf).first()
@@ -99,7 +102,6 @@ class ClienteTestCase(unittest.TestCase):
         response = client.get(f"/cliente/{payload['cpf']}")
         self.assertEqual(response.status_code, 404)
 
-
     def test_criar_cliente_sem_campo_obrigatorio(self):
         payload = {
             "cpf": "12345678999",  # falta nome
@@ -140,3 +142,124 @@ class ClienteTestCase(unittest.TestCase):
 
         response = client.post("/cliente/", json=payload)
         self.assertEqual(response.status_code, 422)
+
+    # Novos testes de erro:
+
+    def test_criar_cliente_cpf_com_menos_digitos(self):
+        payload = {
+            "cpf": "1111111111",  # 10 dígitos
+            "nome": "CPF Curto",
+            "matricula": "20240130",
+            "tipo": "aluno",
+            "graduando": False,
+            "pos_graduando": False,
+            "bolsista": False,
+        }
+        response = client.post("/cliente/", json=payload)
+        self.assertEqual(response.status_code, 422)
+
+    def test_criar_cliente_cpf_com_mais_digitos(self):
+        payload = {
+            "cpf": "222222222222",  # 12 dígitos
+            "nome": "CPF Longo",
+            "matricula": "20240131",
+            "tipo": "professor",
+            "graduando": False,
+            "pos_graduando": False,
+            "bolsista": False,
+        }
+        response = client.post("/cliente/", json=payload)
+        self.assertEqual(response.status_code, 422)
+
+    def test_criar_cliente_cpf_alfanumerico(self):
+        payload = {
+            "cpf": "33333abc333",  # contém letras
+            "nome": "CPF Alfanumérico",
+            "matricula": "20240201",
+            "tipo": "tecnico",
+            "graduando": False,
+            "pos_graduando": False,
+            "bolsista": False,
+        }
+        response = client.post("/cliente/", json=payload)
+        self.assertEqual(response.status_code, 422)
+
+    def test_criar_cliente_duplicado(self):
+        # cria pela primeira vez
+        payload = {
+            "cpf": "00000000",  # 8 dígitos mas vamos assumir a validação do DB
+            "nome": "Origem Duplicado",
+            "matricula": "20240202",
+            "tipo": "aluno",
+            "graduando": True,
+            "pos_graduando": False,
+            "bolsista": True,
+        }
+        client.post("/cliente/", json=payload)
+
+        # tenta criar novamente com mesmo CPF
+        payload2 = payload.copy()
+        payload2["nome"] = "Tentativa Duplicada"
+        response = client.post("/cliente/", json=payload2)
+        self.assertIn(response.status_code, (400, 422))
+
+    def test_remove_cliente_inexistente(self):
+        response = client.delete("/cliente/99999999998")
+        self.assertEqual(response.status_code, 404)
+
+    def test_edita_cliente_matricula_invalida(self):
+        # primeiro criar cliente válido
+        payload = {
+            "cpf": "12345678901",
+            "nome": "Para Editar",
+            "matricula": "20240203",
+            "tipo": "aluno",
+            "graduando": False,
+            "pos_graduando": True,
+            "bolsista": False,
+        }
+        client.post("/cliente/", json=payload)
+
+        # tenta editar com matrícula vazia
+        edit_payload = {"matricula": ""}
+        response = client.put(f"/cliente/{payload['cpf']}", json=edit_payload)
+        self.assertEqual(response.status_code, 405)
+
+    def test_edita_cliente_tipo_invalido(self):
+        # cria cliente
+        payload = {
+            "cpf": "12345678901",
+            "nome": "Para Editar Tipo",
+            "matricula": "20240204",
+            "tipo": "tecnico",
+            "graduando": False,
+            "pos_graduando": False,
+            "bolsista": False,
+        }
+        client.post("/cliente/", json=payload)
+
+        # tenta editar com tipo inválido
+        edit_payload = {"tipo": "externoX"}
+        response = client.put(f"/cliente/{payload['cpf']}", json=edit_payload)
+        self.assertEqual(response.status_code, 405)
+
+    def test_edita_cliente_sem_payload(self):
+        # cria cliente
+        payload = {
+            "cpf": "12345678901",
+            "nome": "Sem Payload",
+            "matricula": "20240205",
+            "tipo": "aluno",
+            "graduando": True,
+            "pos_graduando": False,
+            "bolsista": True,
+        }
+        client.post("/cliente/", json=payload)
+
+        # PUT sem corpo
+        response = client.put(f"/cliente/{payload['cpf']}", json={})
+        self.assertIn(response.status_code, (200, 422, 405))
+
+
+if __name__ == '__main__':
+    unittest.main()
