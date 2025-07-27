@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Annotated
 
-from pydantic import BaseModel, constr
+from pydantic import BaseModel, StringConstraints
 
 
 class TipoClienteEnum(str, Enum):
@@ -10,16 +10,15 @@ class TipoClienteEnum(str, Enum):
     tecnico = "tecnico"
     aluno = "aluno"
 
-# Validação de CPF: exatamente 11 dígitos numéricos
-CPFStr = constr(strip_whitespace=True, min_length=11, max_length=11, regex=r'^\d{11}$')
-# Validação de matrícula: de 1 até 9 caracteres, sem espaços extras
-MatriculaStr = constr(strip_whitespace=True, min_length=1, max_length=9)
-
 
 class ClienteIn(BaseModel):
-    cpf: CPFStr
+    cpf: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=11)
+    ]
     nome: str
-    matricula: MatriculaStr
+    matricula: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=9)
+    ]
     tipo: TipoClienteEnum
     graduando: bool
     pos_graduando: bool
@@ -29,7 +28,7 @@ class ClienteIn(BaseModel):
 class ClienteOut(BaseModel):
     id: int
     nome: str
-    cpf: str
+    cpf: int
     subtipo: str
     matricula: str
     tipo: str
@@ -41,8 +40,7 @@ class ClienteOut(BaseModel):
 class ClienteEdit(BaseModel):
     nome: str | None = None
     matricula: Annotated[
-        str | None,
-        constr(strip_whitespace=True, max_length=9)
+        str | None, StringConstraints(strip_whitespace=True, max_length=9)
     ] = None
     tipo: TipoClienteEnum | None = None
     graduando: bool | None = None
