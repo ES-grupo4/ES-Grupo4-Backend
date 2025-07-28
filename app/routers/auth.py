@@ -50,7 +50,8 @@ async def get_usuario_atual(
 
 
 def get_usuario_por_cpf(db: conexao_bd, cpf: str):
-    usuario = db.scalars(select(Funcionario).where(Funcionario.cpf == cpf)).first()
+    cpf = cpf.replace(".", "").replace("-", "")
+    usuario = db.scalar(select(Funcionario).where(Funcionario.cpf == cpf))
     return usuario
 
 
