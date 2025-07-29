@@ -10,7 +10,7 @@ class Base(DeclarativeBase):
 class Usuario(Base):
     __tablename__ = "usuario"
 
-    cpf: Mapped[str | None] = mapped_column(String(11))
+    cpf: Mapped[str | None] = mapped_column(String(11), unique=True)
     nome: Mapped[str | None]
     id: Mapped[int] = mapped_column(primary_key=True)
     subtipo: Mapped[str] = mapped_column(String())
