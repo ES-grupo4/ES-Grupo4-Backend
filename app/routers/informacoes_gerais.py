@@ -36,7 +36,16 @@ def read_info(db: Session = Depends(get_bd)):
 )
 def update_info(data: InformacoesGeraisIn, db: Session = Depends(get_bd)):
     try:
-        return update_informacoes_gerais(db, data)
+        record = db.query(InformacoesGerais).first()
+        if not record:
+            record = InformacoesGerais()
+            db.add(record)
+        else:
+            for field, value in data.model_dump().items():
+                setattr(record, field, value)
+        db.commit()
+        db.refresh(record)
+        return record
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

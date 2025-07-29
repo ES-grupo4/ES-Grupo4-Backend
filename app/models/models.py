@@ -1,5 +1,5 @@
-from datetime import datetime
-from sqlalchemy import ForeignKey, String, DateTime, JSON
+from datetime import datetime, time
+from sqlalchemy import ForeignKey, String, DateTime, JSON, Time
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -61,8 +61,8 @@ class InformacoesGerais(Base):
     preco_meia_almoco: Mapped[int]
     preco_jantar: Mapped[int]
     preco_meia_jantar: Mapped[int]
-    periodo_almoco: Mapped[datetime] = mapped_column(DateTime)
-    periodo_jantar: Mapped[datetime] = mapped_column(DateTime)
+    periodo_almoco: Mapped[time] = mapped_column(Time)
+    periodo_jantar: Mapped[time] = mapped_column(Time)
 
 
 class HistoricoAcoes(Base):

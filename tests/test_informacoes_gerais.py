@@ -1,12 +1,25 @@
 import unittest
 from fastapi.testclient import TestClient
 from app.main import app
+from app.models.models import InformacoesGerais, Base
+from app.models.db_setup import engine
+
+from sqlalchemy.orm import Session
 
 client = TestClient(app)
 
 
 class TestInformacoesGerais(unittest.TestCase):
+
+    def tearDown(self):
+        # Remove tudo da tabela após o teste
+        self.db.query(InformacoesGerais).delete()
+        self.db.commit()
+        self.db.close()
+    
     def setUp(self):
+        self.client = client
+        self.db: Session = Session(bind=engine)
         self.client = client
         # cria um registro se ele não existir
         payload = {
