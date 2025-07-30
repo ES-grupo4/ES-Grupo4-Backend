@@ -1,7 +1,8 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import time
 
-class InformacoesGeraisIn(BaseModel):
+
+class InformacoesGeraisOut(BaseModel):
     nome_empresa: str
     preco_almoco: int
     preco_meia_almoco: int
@@ -18,8 +19,9 @@ class InformacoesGeraisIn(BaseModel):
                 "preco_meia_almoco": 6,
                 "preco_jantar": 10,
                 "preco_meia_jantar": 5,
-                "periodo_almoco": "10:30:00",
-                "periodo_jantar": "17:00:00"
+                "periodo_almoco": "12:30:00",
+                "periodo_jantar": "17:00:00",
             }
-        }
+        },
+        json_encoders={time: lambda t: t.strftime("%H:%M:%S")},
     )
