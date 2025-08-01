@@ -4,6 +4,7 @@ import polars as pl
 from sqlalchemy import select
 from ..models.db_setup import conexao_bd
 from ..models.models import Compra
+from ..models.models import Cliente
 from ..schemas.compra import CompraIn, CompraOut
 from datetime import datetime
 
@@ -21,7 +22,6 @@ def cadastra_compra(compra: CompraIn, db: conexao_bd):
         horario=compra.horario,
         local=compra.local,
         forma_pagamento=compra.forma_pagamento,
-        tipo_cliente=compra.tipo_cliente,
     )
     db.add(nova_compra)
     return {"message": "Compra cadastrada com sucesso"}
@@ -93,12 +93,21 @@ def compras(db: conexao_bd):
 def filtra_compra(
     db: conexao_bd, coluna: str = Query(...), parametro: str = Query(...)
 ):
-    if not hasattr(Compra, coluna):
+    coluna_valida = None
+
+    if hasattr(Compra, coluna):
+        coluna_valida = getattr(Compra, coluna)
+    elif hasattr(Cliente, coluna):
+        coluna_valida = getattr(Cliente, coluna)
+    else:
         raise HTTPException(status_code=400, detail=f"Coluna '{coluna}' não encontrada")
 
-    colunas = getattr(Compra, coluna)
-
-    saida = db.query(Compra).filter(colunas == parametro).all()
+    saida = (
+        db.query(Compra)
+        .join(Cliente, Compra.usuario_id == Cliente.usuario_id)
+        .filter(coluna_valida == parametro)
+        .all()
+    )
 
     if not saida:
         raise HTTPException(status_code=404, detail="Nenhuma compra encontrada")
