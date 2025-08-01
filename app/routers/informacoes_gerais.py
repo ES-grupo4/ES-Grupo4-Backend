@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..models.models import InformacoesGerais
 from ..models.db_setup import get_bd
-from ..schemas.informacoes_gerais import InformacoesGeraisOut
+from ..schemas.informacoes_gerais import InformacoesGeraisDTO
 
 informacoes_gerais_router = APIRouter(
     prefix="/informacoes-gerais",
@@ -16,10 +16,10 @@ router = informacoes_gerais_router
 @router.post(
     "/",
     summary="Cria ou substitui as informações gerais",
-    response_model=InformacoesGeraisOut,
+    response_model=InformacoesGeraisDTO,
 )
 def create_or_replace_info(
-    data: InformacoesGeraisOut,
+    data: InformacoesGeraisDTO,
     db: Session = Depends(get_bd),
 ):
     # Remove registro existente se houver
@@ -41,7 +41,7 @@ def create_or_replace_info(
     "/",
     summary="Pega as informações gerais",
     tags=["Informações Gerais"],
-    response_model=InformacoesGeraisOut,
+    response_model=InformacoesGeraisDTO,
 )
 def read_info(db: Session = Depends(get_bd)):
     info = get_informacoes_gerais(db)
@@ -56,9 +56,9 @@ def read_info(db: Session = Depends(get_bd)):
     "/",
     summary="Atualiza as informações gerais",
     tags=["Informações Gerais"],
-    response_model=InformacoesGeraisOut,
+    response_model=InformacoesGeraisDTO,
 )
-def update_info(data: InformacoesGeraisOut, db: Session = Depends(get_bd)):
+def update_info(data: InformacoesGeraisDTO, db: Session = Depends(get_bd)):
     # tabela com apenas um registro
     try:
         record = db.query(InformacoesGerais).first()
@@ -81,7 +81,7 @@ def get_informacoes_gerais(db: Session) -> InformacoesGerais | None:
 
 
 def update_informacoes_gerais(
-    db: Session, data: InformacoesGeraisOut
+    db: Session, data: InformacoesGeraisDTO
 ) -> InformacoesGerais:
     record = db.query(InformacoesGerais).first()
     if not record:

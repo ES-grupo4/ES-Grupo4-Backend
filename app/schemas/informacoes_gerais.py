@@ -2,7 +2,7 @@ from pydantic import BaseModel, ConfigDict
 from datetime import time
 
 
-class InformacoesGeraisOut(BaseModel):
+class InformacoesGeraisDTO(BaseModel):
     nome_empresa: str
     preco_almoco: int
     preco_meia_almoco: int

@@ -2,7 +2,7 @@ from typing import Annotated
 from fastapi import Depends
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session
 
 from .models import Base
 
