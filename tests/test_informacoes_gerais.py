@@ -1,7 +1,7 @@
 import unittest
 from fastapi.testclient import TestClient
 from app.main import app
-from app.models.models import InformacoesGerais, Base
+from app.models.models import InformacoesGerais
 from app.models.db_setup import engine
 from datetime import time
 
@@ -85,6 +85,5 @@ class TestInformacoesGerais(unittest.TestCase):
             "periodo_jantar": "19:00:00",
         }
         response = self.client.put("/informacoes-gerais/", json=payload)
-        print(response.json())
         assert response.status_code == 404
         assert response.json() == {"detail": "404: Informações gerais não encontradas."}
