@@ -7,12 +7,13 @@ from ..models.models import Compra
 from ..models.models import Cliente
 from ..schemas.compra import CompraIn, CompraOut
 from datetime import datetime
+from typing import Optional
 
 compra_router = APIRouter(prefix="/compra", tags=["Compra"])
 router = compra_router
 
 
-@compra_router.post(
+@router.post(
     "/cadastra-compra",
     summary="Cadastra uma compra no sistema",
 )
@@ -27,16 +28,16 @@ def cadastra_compra(compra: CompraIn, db: conexao_bd):
     return {"message": "Compra cadastrada com sucesso"}
 
 
-@compra_router.post(
+@router.post(
     "/cadastra-compra-csv", summary="Cadastra uma compra no sistema por meio de csv"
 )
-async def cadastra_compra_csv(db: conexao_bd, file: UploadFile = File(...)):
-    if not file.filename.endswith(".csv"):  # type: ignore
+async def cadastra_compra_csv(db: conexao_bd, arquivo: UploadFile = File(...)):
+    if not arquivo.filename.endswith(".csv"):  # type: ignore
         raise HTTPException(status_code=400, detail="O arquivo deveria ser CSV.")
 
-    contents = await file.read()
+    contents = await arquivo.read()
     try:
-        table_from_csv = pl.read_csv(io.BytesIO(contents))
+        tabela_csv = pl.read_csv(io.BytesIO(contents))
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erro lendo CSV: {e}")
 
@@ -45,35 +46,33 @@ async def cadastra_compra_csv(db: conexao_bd, file: UploadFile = File(...)):
         "horario",
         "local",
         "forma_pagamento",
-        "tipo_cliente",
     }
-    if not required_columns.issubset(set(table_from_csv.columns)):
+    if not required_columns.issubset(set(tabela_csv.columns)):
         raise HTTPException(
             status_code=400, detail="O CSV não contém as colunas necessárias."
         )
 
-    inserted = 0
-    for row in table_from_csv.iter_rows(named=True):
+    inseridas = 0
+    for linha in tabela_csv.iter_rows(named=True):
         try:
             compra = Compra(
-                usuario_id=int(row["usuario_id"]),
-                horario=datetime.strptime(row["horario"], "%Y-%m-%d %H:%M:%S"),
-                local=str(row["local"]),
-                forma_pagamento=str(row["forma_pagamento"]),
-                tipo_cliente=str(row["tipo_cliente"]),
+                usuario_id=int(linha["usuario_id"]),
+                horario=datetime.strptime(linha["horario"], "%Y-%m-%d %H:%M:%S"),
+                local=str(linha["local"]),
+                forma_pagamento=str(linha["forma_pagamento"]),
             )
             db.add(compra)
             db.commit()
-            inserted += 1
+            inseridas += 1
         except Exception as e:
-            print(f"Error inserting {row['name']}: {e}")
+            print(f"Erro ao cadastrar {linha['nome']}: {e}")
             db.rollback()
             continue
 
-    return {"message": f"{inserted} employees successfully inserted."}
+    return {"message": f"{inseridas} compra(s) cadastrada(s) com sucesso."}
 
 
-@compra_router.get(
+@router.get(
     "/retorna-compras",
     summary="Retorna todas as compras cadastradas",
     tags=["Compra"],
@@ -84,32 +83,51 @@ def compras(db: conexao_bd):
     return compras
 
 
-@compra_router.get(
+@router.get(
     "/filtra-compras",
     summary="Retorna compras a partir de um filtro",
     tags=["Compra"],
     response_model=list[CompraOut],
 )
 def filtra_compra(
-    db: conexao_bd, coluna: str = Query(...), parametro: str = Query(...)
+    db: conexao_bd,
+    horario: Optional[datetime] = Query(
+        None, description="Filtra por horário da compra"
+    ),
+    local: Optional[str] = Query(None, description="Filtra por local da compra"),
+    forma_pagamento: Optional[str] = Query(
+        None, description="Filtra por forma de pagamento da compra"
+    ),
+    comprador: Optional[str] = Query(
+        None, description="Filtra por comprador responsável pela compra"
+    ),
+    categoria_comprador: Optional[str] = Query(
+        None, description="Filtra por categoria do comprador"
+    ),
 ):
-    coluna_valida = None
+    query = db.query(Compra).join(Cliente, Compra.usuario_id == Cliente.usuario_id)
+    filtros = []
 
-    if hasattr(Compra, coluna):
-        coluna_valida = getattr(Compra, coluna)
-    elif hasattr(Cliente, coluna):
-        coluna_valida = getattr(Cliente, coluna)
-    else:
-        raise HTTPException(status_code=400, detail=f"Coluna '{coluna}' não encontrada")
+    if horario is not None:
+        filtros.append(Compra.horario == horario)
+    if local is not None:
+        filtros.append(Compra.local.ilike(f"%{local}%"))
+    if forma_pagamento is not None:
+        filtros.append(Compra.forma_pagamento.ilike(f"%{forma_pagamento}%"))
+    if comprador is not None:
+        filtros.append(Cliente.nome.ilike(f"%{comprador}%"))
+    if categoria_comprador is not None:
+        filtros.append(Cliente.tipo.ilike(f"%{categoria_comprador}%"))
 
-    saida = (
-        db.query(Compra)
-        .join(Cliente, Compra.usuario_id == Cliente.usuario_id)
-        .filter(coluna_valida == parametro)
-        .all()
-    )
+    if filtros:
+        query = query.filter(*filtros)
+
+    saida = query.all()
 
     if not saida:
-        raise HTTPException(status_code=404, detail="Nenhuma compra encontrada")
+        raise HTTPException(
+            status_code=404,
+            detail="Nenhuma compra encontrada com os filtros fornecidos",
+        )
 
     return saida

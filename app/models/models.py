@@ -78,6 +78,6 @@ class Compra(Base):
     __tablename__ = "compra"
 
     usuario_id: Mapped[int] = mapped_column(primary_key=True)
+    horario: Mapped[datetime]
     local: Mapped[str]
     forma_pagamento: Mapped[str]
-    tipo_cliente: Mapped[str]
