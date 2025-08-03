@@ -1,15 +1,16 @@
 import unittest
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
 from app.main import app
 from app.models.models import Funcionario
-from app.models.db_setup import bd_session
+from app.models.db_setup import engine
 
 client = TestClient(app)
 
 
 class AuthTestCase(unittest.TestCase):
     def setUp(self):
-        self.db = bd_session()
+        self.db = Session(engine)
         self.funcionario_data = {
             "cpf": "12345678900",
             "nome": "John Doe",
