@@ -38,8 +38,10 @@ jobs:
 
       - name: Install the project
         run: uv sync --locked --all-extras --dev
-
-      - name: Run database migrations
+      - name: Wait for network to be ready
+        run: sleep 5
+      
+        - name: Run database migrations
         run: uv run alembic upgrade head
         env:
           DATABASE_URL: "postgresql+psycopg://testuser:testpassword@db:5432/testdb"
