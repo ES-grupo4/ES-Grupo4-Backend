@@ -16,6 +16,7 @@ class AuthTestCase(unittest.TestCase):
             "senha": "John123!",
             "email": "john@doe.com",
             "tipo": "admin",
+            "data_entrada": "2025-08-04"
         }
 
         funcionario_existente = (

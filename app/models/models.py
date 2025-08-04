@@ -8,8 +8,7 @@ from sqlalchemy import (
     Date,
     Boolean,
     Integer,
-    CHAR,
-    func
+    CHAR
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -42,7 +41,7 @@ class Funcionario(Usuario):
     tipo: Mapped[str] = mapped_column(String(50))
     senha: Mapped[str] = mapped_column(String(50))
     email: Mapped[str | None] = mapped_column(String(320), nullable=True)
-    data_entrada: Mapped[date] = mapped_column(Date, nullable=False, server_default=func.current_date())
+    data_entrada: Mapped[date] = mapped_column(Date)
     data_saida: Mapped[date | None] = mapped_column(Date, nullable=True)
 
     __mapper_args__ = {
