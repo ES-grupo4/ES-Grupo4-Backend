@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.models.models import Funcionario
 from app.models.db_setup import bd_session
+from datetime import date
 
 client = TestClient(app)
 
@@ -16,7 +17,7 @@ class AuthTestCase(unittest.TestCase):
             "senha": "John123!",
             "email": "john@doe.com",
             "tipo": "admin",
-            "data_entrada": "2025-08-04"
+            "data_entrada": date(2025, 8, 4)
         }
 
         funcionario_existente = (
