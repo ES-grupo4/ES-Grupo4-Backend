@@ -14,7 +14,7 @@ router = compra_router
 
 
 @router.post(
-    "/cadastra-compra",
+    "/cadastra-compra/",
     summary="Cadastra uma compra no sistema",
 )
 def cadastra_compra(compra: CompraIn, db: conexao_bd):
@@ -29,7 +29,7 @@ def cadastra_compra(compra: CompraIn, db: conexao_bd):
 
 
 @router.post(
-    "/cadastra-compra-csv", summary="Cadastra uma compra no sistema por meio de csv"
+    "/cadastra-compra-csv/", summary="Cadastra uma compra no sistema por meio de csv"
 )
 async def cadastra_compra_csv(db: conexao_bd, arquivo: UploadFile = File(...)):
     if not arquivo.filename.endswith(".csv"):  # type: ignore
@@ -73,18 +73,23 @@ async def cadastra_compra_csv(db: conexao_bd, arquivo: UploadFile = File(...)):
 
 
 @router.get(
-    "/retorna-compras",
+    "/retorna-compras/",
     summary="Retorna todas as compras cadastradas",
     tags=["Compra"],
     response_model=list[CompraOut],
 )
 def compras(db: conexao_bd):
     compras = db.scalars(select(Compra)).all()
+    if not compras:
+        raise HTTPException(
+            status_code=404,
+            detail="Nenhuma compra cadastrada no sistema",
+        )
     return compras
 
 
 @router.get(
-    "/filtra-compras",
+    "/filtra-compras/",
     summary="Retorna compras a partir de um filtro",
     tags=["Compra"],
     response_model=list[CompraOut],
