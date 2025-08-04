@@ -4,7 +4,7 @@ from app.main import app
 from app.models.models import Compra
 from app.models.db_setup import engine
 from sqlalchemy.orm import Session
-from datetime import time
+from datetime import datetime
 
 client = TestClient(app)
 
@@ -22,7 +22,10 @@ class AuthTestCase(unittest.TestCase):
         self.db.commit()
 
         compra_info = Compra(
-            id_usuario=1234, horario=time(10, 50), local="ufcg", forma_pagamento="pix"
+            id_usuario=1234,
+            horario=datetime(2025, 4, 12, 10, 50),
+            local="ufcg",
+            forma_pagamento="pix",
         )
 
         self.db.add(compra_info)
@@ -32,7 +35,7 @@ class AuthTestCase(unittest.TestCase):
     def test_cadastra_sucesso(self):
         payload = {
             "usuario_id": 5678,
-            "horario": time(11, 20),
+            "horario": datetime(2025, 6, 20, 11, 20),
             "local": "ufcg",
             "forma_pagamento": "dinheiro",
         }
@@ -63,7 +66,7 @@ class AuthTestCase(unittest.TestCase):
     def test_filtra_compras(self):
         payload = {
             "usuario_id": 5678,
-            "horario": time(11, 20),
+            "horario": datetime(2025, 6, 20, 11, 20),
             "local": "ufcg",
             "forma_pagamento": "dinheiro",
         }
