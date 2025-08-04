@@ -32,15 +32,12 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version-file: ".python-version"
-
-      - name: "Set up DB"
-        run: docker build -t postgres .
-
+          
       - name: Install the project
         run: uv sync --locked --all-extras --dev
       - name: Wait for network to be ready
         run: sleep 5
-        
+
       - name: Run database migrations
         run: uv run alembic upgrade head
         env:
