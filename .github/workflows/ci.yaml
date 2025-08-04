@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   run-tests:
-    name: Run Python Tests
+    name: python
     runs-on: ubuntu-latest
 
     services:
@@ -23,19 +23,17 @@ jobs:
           --health-retries 5
     
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Install uv
-        uses: yutailang0119/setup-uv@v1.3.0
+        uses: astral-sh/setup-uv@v5
 
-      - name: Set up Python
+      - name: "Set up Python"
         uses: actions/setup-python@v5
         with:
           python-version-file: ".python-version"
-          cache: 'uv'
 
-      - name: Install project dependencies
+      - name: Install the project
         run: uv sync --locked --all-extras --dev
 
       - name: Wait for database service to be ready on localhost
@@ -45,12 +43,12 @@ jobs:
             sleep 0.1
           done
           echo "Database service is now ready on localhost!"
-            
+
       - name: Run database migrations
         run: uv run alembic upgrade head
         env:
           DATABASE_URL: "postgresql+psycopg://testuser:testpassword@localhost:5432/testdb"
-            
+        
       - name: Run tests
         run: uv run -m unittest
         env:
