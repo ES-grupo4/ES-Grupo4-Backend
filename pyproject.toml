@@ -9,5 +9,5 @@ dependencies = [
     "sqlalchemy>=2.0.41",
     "python-jose[cryptography]",
     "alembic>=1.16.4",
-    "psycopg>=3.2.9",
+    "psycopg[binary,pool]>=3.2.9",
 ]
