@@ -35,6 +35,9 @@ jobs:
 
       - name: "Set up DB"
         run: docker build -t postgres .
+        
+      - name: Install the project
+        run: uv sync --locked --all-extras --dev
 
       - name: Run database migrations
         run: uv run alembic upgrade head
@@ -42,8 +45,6 @@ jobs:
           DATABASE_URL: "postgresql://testuser:testpassword@db:5432/testdb"
         
 
-      - name: Install the project
-        run: uv sync --locked --all-extras --dev
 
       - name: Run tests
         run: uv run -m unittest
