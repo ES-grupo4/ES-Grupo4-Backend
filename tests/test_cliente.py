@@ -276,71 +276,167 @@ class ClienteTestCase(unittest.TestCase):
         tabela.write_csv(buf)
         return buf.getvalue()
 
+    def test_upload_csv_sucesso(self):
+        # CSV válido com uma linha
+        headers = [
+            "cpf",
+            "nome",
+            "matricula",
+            "tipo",
+            "graduando",
+            "pos_graduando",
+            "bolsista",
+        ]
+        rows = [
+            {
+                "cpf": "12345678912",
+                "nome": "Cliente A",
+                "matricula": "20240210",
+                "tipo": "aluno",
+                "graduando": True,
+                "pos_graduando": False,
+                "bolsista": False,
+            },
+        ]
+        csv_bytes = self.generate_csv_bytes(headers, rows)
 
-def test_upload_csv_sucesso(self):
-    # CSV válido com uma linha
-    headers = [
-        "cpf",
-        "nome",
-        "matricula",
-        "tipo",
-        "graduando",
-        "pos_graduando",
-        "bolsista",
-    ]
-    rows = [
-        {
-            "cpf": "12345678912",
-            "nome": "Cliente A",
-            "matricula": "20240210",
-            "tipo": "aluno",
-            "graduando": True,
-            "pos_graduando": False,
-            "bolsista": False,
-        },
-    ]
-    csv_bytes = self.generate_csv_bytes(headers, rows)
+        response = self.client.post(
+            "/cliente/upload-csv/",
+            files={"arquivo": ("clientes.csv", csv_bytes, "text/csv")},
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["message"], "1 cliente(s) cadastrado(s) com sucesso.")
 
-    response = self.client.post(
-        "/cliente/upload-csv/",
-        files={"arquivo": ("clientes.csv", csv_bytes, "text/csv")},
-    )
-    self.assertEqual(response.status_code, 200)
-    data = response.json()
-    self.assertEqual(data["message"], "1 cliente(s) cadastrado(s) com sucesso.")
+        # Verifica no banco
+        cliente = self.db.query(Cliente).filter_by(cpf="12345678912").first()
+        self.assertIsNotNone(cliente)
+        self.assertEqual(cliente.nome, "Cliente A")
 
-    # Verifica no banco
-    cliente = self.db.query(Cliente).filter_by(cpf="12345678912").first()
-    self.assertIsNotNone(cliente)
-    self.assertEqual(cliente.nome, "Cliente A")
+        # **Limpeza**: deleta o cliente recém-criado para não interferir em próximos testes
+        self.db.delete(cliente)
+        self.db.commit()
 
-    # **Limpeza**: deleta o cliente recém-criado para não interferir em próximos testes
-    self.db.delete(cliente)
-    self.db.commit()
+    def test_upload_csv_extensao_invalida(self):
+        csv_bytes = b"qualquer,conteudo\n"
+        response = self.client.post(
+            "/cliente/upload-csv/",
+            files={"arquivo": ("clientes.txt", csv_bytes, "text/plain")},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("deveria ser CSV", response.json()["detail"])
 
+    def test_upload_csv_colunas_faltando(self):
+        # Cabeçalho errado, faltam colunas obrigatórias
+        headers = ["cpf", "nome", "matricula"]
+        rows = [{"cpf": "55555555555", "nome": "Nome", "matricula": "20240211"}]
+        csv_bytes = self.generate_csv_bytes(headers, rows)
 
-def test_upload_csv_extensao_invalida(self):
-    csv_bytes = b"qualquer,conteudo\n"
-    response = self.client.post(
-        "/cliente/upload-csv/",
-        files={"arquivo": ("clientes.txt", csv_bytes, "text/plain")},
-    )
-    self.assertEqual(response.status_code, 400)
-    self.assertIn("deveria ser CSV", response.json()["detail"])
+        response = self.client.post(
+            "/cliente/upload-csv/",
+            files={"arquivo": ("clientes.csv", csv_bytes, "text/csv")},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("não contém as colunas necessárias", response.json()["detail"])
 
+    def test_filtrar_por_nome(self):
+        clientes = [
+            {
+                "cpf": "11111111111",
+                "nome": "Alice",
+                "matricula": "MAT001",
+                "tipo": "aluno",
+                "graduando": True,
+                "pos_graduando": False,
+                "bolsista": True,
+            },
+            {
+                "cpf": "22222222222",
+                "nome": "Bob",
+                "matricula": "MAT002",
+                "tipo": "tecnico",
+                "graduando": False,
+                "pos_graduando": False,
+                "bolsista": False,
+            },
+            {
+                "cpf": "33333333333",
+                "nome": "Alicia",
+                "matricula": "MAT003",
+                "tipo": "professor",
+                "graduando": False,
+                "pos_graduando": True,
+                "bolsista": True,
+            },
+        ]
+        for c in clientes:
+            self.client.post("/cliente/", json=c)
+        response = self.client.get("/cliente/?nome=Ali")
+        self.assertEqual(response.status_code, 200)
+        nomes = [c["nome"] for c in response.json()]
+        self.assertIn("Alice", nomes)
+        self.assertIn("Alicia", nomes)
+        self.assertNotIn("Bob", nomes)
 
-def test_upload_csv_colunas_faltando(self):
-    # Cabeçalho errado, faltam colunas obrigatórias
-    headers = ["cpf", "nome", "matricula"]
-    rows = [{"cpf": "55555555555", "nome": "Nome", "matricula": "20240211"}]
-    csv_bytes = self.generate_csv_bytes(headers, rows)
+    def test_filtrar_por_tipo(self):
+        self.client.post(
+            "/cliente/",
+            json={
+                "cpf": "22222222222",
+                "nome": "Bob",
+                "matricula": "MAT002",
+                "tipo": "tecnico",
+                "graduando": False,
+                "pos_graduando": False,
+                "bolsista": False,
+            },
+        )
+        response = self.client.get("/cliente/?tipo=tecnico")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()), 1)
+        self.assertEqual(response.json()[0]["nome"], "Bob")
 
-    response = self.client.post(
-        "/cliente/upload-csv/",
-        files={"arquivo": ("clientes.csv", csv_bytes, "text/csv")},
-    )
-    self.assertEqual(response.status_code, 400)
-    self.assertIn("não contém as colunas necessárias", response.json()["detail"])
+    def test_filtrar_por_matricula(self):
+        self.client.post(
+            "/cliente/",
+            json={
+                "cpf": "33333333333",
+                "nome": "Alicia",
+                "matricula": "MAT003",
+                "tipo": "professor",
+                "graduando": False,
+                "pos_graduando": True,
+                "bolsista": True,
+            },
+        )
+        response = self.client.get("/cliente/?matricula=MAT003")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()), 1)
+        self.assertEqual(response.json()[0]["nome"], "Alicia")
+
+    def test_filtrar_combinado(self):
+        self.client.post(
+            "/cliente/",
+            json={
+                "cpf": "11111111111",
+                "nome": "Alice",
+                "matricula": "MAT001",
+                "tipo": "aluno",
+                "graduando": True,
+                "pos_graduando": False,
+                "bolsista": True,
+            },
+        )
+        response = self.client.get("/cliente/?nome=Ali&tipo=aluno")
+        self.assertEqual(response.status_code, 200)
+        resultados = response.json()
+        self.assertEqual(len(resultados), 1)
+        self.assertEqual(resultados[0]["nome"], "Alice")
+
+    def test_filtrar_sem_resultado(self):
+        response = self.client.get("/cliente/?nome=Zé&tipo=aluno")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()), 0)
 
 
 if __name__ == "__main__":

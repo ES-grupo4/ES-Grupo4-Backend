@@ -179,9 +179,9 @@ async def upload_clientes_csv(db: conexao_bd, arquivo: UploadFile = File(...)):
                 pos_graduando=bool(linha["pos_graduando"]),
                 bolsista=bool(linha["bolsista"]),
             )
+            inseridos += 1
             db.add(cliente)
             db.commit()
-            inseridos += 1
         except Exception as e:
             print(f"Erro ao cadastrar {linha.get('cpf')}: {e}")
             db.rollback()
