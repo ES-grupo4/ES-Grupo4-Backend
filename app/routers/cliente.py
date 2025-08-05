@@ -1,11 +1,11 @@
 import io
-from fastapi import APIRouter, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, File, HTTPException, UploadFile, status, Query
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 import polars as pl
 from ..models.db_setup import conexao_bd
 from ..models.models import Cliente
-from ..schemas.cliente import ClienteEdit, ClienteIn, ClienteOut
+from ..schemas.cliente import ClienteEdit, ClienteIn, ClienteOut, ClienteEnum
 
 cliente_router = APIRouter(
     prefix="/cliente",
@@ -47,14 +47,27 @@ def cria_cliente(cliente: ClienteIn, db: conexao_bd):
 
 @cliente_router.get(
     "/",
-    summary="Pega todos os clientes",
+    summary="Pega todos os clientes (com filtros opcionais)",
     response_model=list[ClienteOut],
 )
-def listar_clientes(db: conexao_bd):
+def listar_clientes(
+    db: conexao_bd,
+    nome: str | None = Query(default=None, description="Filtrar por nome"),
+    matricula: str | None = Query(default=None, description="Filtrar por matrícula"),
+    tipo: ClienteEnum | None = Query(default=None, description="Filtrar por tipo"),
+):
     """
-    Lista todos os clientes cadastrados.
+    Lista todos os clientes cadastrados, com possibilidade de filtros por nome, matrícula e tipo.
     """
-    clientes = db.scalars(select(Cliente)).all()
+    query = select(Cliente)
+    if nome:
+        query = query.where(Cliente.nome.ilike(f"%{nome}%"))
+    if matricula:
+        query = query.where(Cliente.matricula == matricula)
+    if tipo:
+        query = query.where(Cliente.tipo == tipo)
+
+    clientes = db.scalars(query).all()
     return clientes
 
 
