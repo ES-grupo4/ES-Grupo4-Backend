@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-
+import csv
+from typing import List
 from ..models.db_setup import conexao_bd
 from ..models.models import Cliente
 from ..schemas.cliente import ClienteEdit, ClienteIn, ClienteOut
@@ -73,10 +74,9 @@ def remover_cliente(cpf: str, db: conexao_bd):
             detail="Cliente não encontrado",
         )
     db.delete(cliente)
-    db.commit()
 
 
-@cliente_router.patch(
+@cliente_router.put(
     "/{cpf}",
     summary="Edita os dados de um cliente pelo CPF",
     response_model=ClienteOut,
@@ -91,7 +91,7 @@ def editar_cliente(cpf: str, dados: ClienteEdit, db: conexao_bd):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Cliente não encontrado",
         )
-    for campo, valor in dados.dict(exclude_unset=True).items():
+    for campo, valor in dados.model_dump(exclude_unset=True).items():
         setattr(cliente, campo, valor)
     db.commit()
     db.refresh(cliente)

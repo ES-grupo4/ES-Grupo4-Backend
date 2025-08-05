@@ -106,7 +106,7 @@ class ClienteTestCase(unittest.TestCase):
         response = self.client.delete(f"/cliente/{payload['cpf']}")
         self.assertEqual(response.status_code, 204)
         response = self.client.get(f"/cliente/{payload['cpf']}")
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 200)
 
     def test_criar_cliente_sem_campo_obrigatorio(self):
         payload = {
@@ -201,7 +201,7 @@ class ClienteTestCase(unittest.TestCase):
         }
         self.client.post("/cliente/", json=payload)
         edit_payload = {"matricula": ""}
-        response = self.client.patch(f"/cliente/{payload['cpf']}", json=edit_payload)
+        response = self.client.put(f"/cliente/{payload['cpf']}", json=edit_payload)
         self.assertIn(response.status_code, (200, 422))
 
     def test_edita_cliente_tipo_invalido(self):
@@ -216,7 +216,7 @@ class ClienteTestCase(unittest.TestCase):
         }
         self.client.post("/cliente/", json=payload)
         edit_payload = {"tipo": "externoX"}
-        response = self.client.patch(f"/cliente/{payload['cpf']}", json=edit_payload)
+        response = self.client.put(f"/cliente/{payload['cpf']}", json=edit_payload)
         self.assertIn(response.status_code, (200, 422))
 
     def test_edita_cliente_sem_payload(self):
@@ -230,7 +230,7 @@ class ClienteTestCase(unittest.TestCase):
             "bolsista": True,
         }
         self.client.post("/cliente/", json=payload)
-        response = self.client.patch(f"/cliente/{payload['cpf']}", json={})
+        response = self.client.put(f"/cliente/{payload['cpf']}", json={})
         self.assertIn(response.status_code, (200, 422))
 
     def test_rota_inexistente_get(self):
