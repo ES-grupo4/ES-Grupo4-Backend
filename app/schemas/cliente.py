@@ -1,7 +1,6 @@
 from enum import Enum
 from typing import Annotated
-
-from pydantic import BaseModel, StringConstraints, field_validator
+from pydantic import BaseModel, StringConstraints, field_validator, ConfigDict
 
 
 class ClienteEnum(str, Enum):
@@ -31,6 +30,20 @@ class ClienteIn(BaseModel):
             raise ValueError("O CPF deve conter somente dígitos numéricos.")
         return v
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "cpf": "12345678901",
+                "nome": "João Pedro",
+                "matricula": "20240001",
+                "tipo": "aluno",
+                "graduando": True,
+                "pos_graduando": False,
+                "bolsista": True,
+            }
+        }
+    )
+
 
 class ClienteOut(BaseModel):
     id: int
@@ -43,6 +56,22 @@ class ClienteOut(BaseModel):
     pos_graduando: bool
     bolsista: bool
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "id": 1,
+                "nome": "João Pedro",
+                "cpf": "12345678901",
+                "subtipo": "regular",
+                "matricula": "20240001",
+                "tipo": "aluno",
+                "graduando": True,
+                "pos_graduando": False,
+                "bolsista": True,
+            }
+        }
+    )
+
 
 class ClienteEdit(BaseModel):
     nome: str | None = None
@@ -53,3 +82,16 @@ class ClienteEdit(BaseModel):
     graduando: bool | None = None
     pos_graduando: bool | None = None
     bolsista: bool | None = None
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "nome": "João Pedro Editado",
+                "matricula": "20240002",
+                "tipo": "professor",
+                "graduando": False,
+                "pos_graduando": True,
+                "bolsista": False,
+            }
+        }
+    )
