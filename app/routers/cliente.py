@@ -1,8 +1,8 @@
-from fastapi import APIRouter, HTTPException, status
+import io
+from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-import csv
-from typing import List
+import polars as pl
 from ..models.db_setup import conexao_bd
 from ..models.models import Cliente
 from ..schemas.cliente import ClienteEdit, ClienteIn, ClienteOut
@@ -114,3 +114,64 @@ def buscar_cliente(cpf: str, db: conexao_bd):
             detail="Cliente não encontrado",
         )
     return cliente
+
+
+@cliente_router.post(
+    "/upload-csv/",
+    summary="Cadastra clientes no sistema por meio de CSV",
+)
+async def upload_clientes_csv(db: conexao_bd, arquivo: UploadFile = File(...)):
+    """
+    Realiza a inserção em massa de clientes a partir de um arquivo CSV.
+    O CSV deve conter colunas: cpf,nome,matricula,tipo,graduando,pos_graduando,bolsista
+    Clientes duplicados (mesmo CPF) são ignorados.
+    """
+    if not arquivo.filename.endswith(".csv"):  # type: ignore
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="O arquivo deveria ser CSV."
+        )
+
+    contents = await arquivo.read()
+    try:
+        tabela_csv = pl.read_csv(io.BytesIO(contents))
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Erro lendo CSV: {e}"
+        )
+
+    required_columns = {
+        "cpf",
+        "nome",
+        "matricula",
+        "tipo",
+        "graduando",
+        "pos_graduando",
+        "bolsista",
+    }
+    if not required_columns.issubset(set(tabela_csv.columns)):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="O CSV não contém as colunas necessárias.",
+        )
+
+    inseridos = 0
+    for linha in tabela_csv.iter_rows(named=True):
+        try:
+            cliente = Cliente(
+                cpf=str(linha["cpf"]),
+                nome=str(linha["nome"]),
+                matricula=str(linha["matricula"]),
+                tipo=str(linha["tipo"]),
+                graduando=bool(linha["graduando"]),
+                pos_graduando=bool(linha["pos_graduando"]),
+                bolsista=bool(linha["bolsista"]),
+            )
+            db.add(cliente)
+            db.commit()
+            inseridos += 1
+        except Exception as e:
+            print(f"Erro ao cadastrar {linha.get('cpf')}: {e}")
+            db.rollback()
+            continue
+
+    return {"message": f"{inseridos} cliente(s) cadastrado(s) com sucesso."}
