@@ -318,27 +318,29 @@ def test_upload_csv_sucesso(self):
     self.db.delete(cliente)
     self.db.commit()
 
-    def test_upload_csv_extensao_invalida(self):
-        csv_bytes = b"qualquer,conteudo\n"
-        response = self.client.post(
-            "/cliente/upload-csv/",
-            files={"arquivo": ("clientes.txt", csv_bytes, "text/plain")},
-        )
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("deveria ser CSV", response.json()["detail"])
 
-    def test_upload_csv_colunas_faltando(self):
-        # Cabeçalho errado, faltam colunas obrigatórias
-        headers = ["cpf", "nome", "matricula"]
-        rows = [{"cpf": "55555555555", "nome": "Nome", "matricula": "20240211"}]
-        csv_bytes = self.generate_csv_bytes(headers, rows)
+def test_upload_csv_extensao_invalida(self):
+    csv_bytes = b"qualquer,conteudo\n"
+    response = self.client.post(
+        "/cliente/upload-csv/",
+        files={"arquivo": ("clientes.txt", csv_bytes, "text/plain")},
+    )
+    self.assertEqual(response.status_code, 400)
+    self.assertIn("deveria ser CSV", response.json()["detail"])
 
-        response = self.client.post(
-            "/cliente/upload-csv/",
-            files={"arquivo": ("clientes.csv", csv_bytes, "text/csv")},
-        )
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("não contém as colunas necessárias", response.json()["detail"])
+
+def test_upload_csv_colunas_faltando(self):
+    # Cabeçalho errado, faltam colunas obrigatórias
+    headers = ["cpf", "nome", "matricula"]
+    rows = [{"cpf": "55555555555", "nome": "Nome", "matricula": "20240211"}]
+    csv_bytes = self.generate_csv_bytes(headers, rows)
+
+    response = self.client.post(
+        "/cliente/upload-csv/",
+        files={"arquivo": ("clientes.csv", csv_bytes, "text/csv")},
+    )
+    self.assertEqual(response.status_code, 400)
+    self.assertIn("não contém as colunas necessárias", response.json()["detail"])
 
 
 if __name__ == "__main__":
