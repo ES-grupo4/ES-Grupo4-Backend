@@ -1,3 +1,4 @@
+from datetime import date
 import unittest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -17,6 +18,7 @@ class AuthTestCase(unittest.TestCase):
             "senha": "John123!",
             "email": "john@doe.com",
             "tipo": "admin",
+            "data_entrada": date(2025, 8, 4),
         }
 
         funcionario_existente = (
