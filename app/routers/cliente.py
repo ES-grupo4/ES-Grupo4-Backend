@@ -11,6 +11,7 @@ cliente_router = APIRouter(
     tags=["Cliente"],
 )
 
+
 @cliente_router.post(
     "/",
     summary="Cria um cliente",
@@ -42,6 +43,7 @@ def cria_cliente(cliente: ClienteIn, db: conexao_bd):
     db.refresh(novo)
     return novo
 
+
 @cliente_router.get(
     "/",
     summary="Pega todos os clientes",
@@ -53,6 +55,7 @@ def listar_clientes(db: conexao_bd):
     """
     clientes = db.scalars(select(Cliente)).all()
     return clientes
+
 
 @cliente_router.delete(
     "/{cpf}",
@@ -71,6 +74,7 @@ def remover_cliente(cpf: str, db: conexao_bd):
         )
     db.delete(cliente)
     db.commit()
+
 
 @cliente_router.patch(
     "/{cpf}",
@@ -92,6 +96,7 @@ def editar_cliente(cpf: str, dados: ClienteEdit, db: conexao_bd):
     db.commit()
     db.refresh(cliente)
     return cliente
+
 
 @cliente_router.get(
     "/{cpf}",

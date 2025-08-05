@@ -36,7 +36,7 @@ class ClienteOut(BaseModel):
     id: int
     nome: str
     cpf: str
-    subtipo: str  
+    subtipo: str
     matricula: str
     tipo: ClienteEnum
     graduando: bool

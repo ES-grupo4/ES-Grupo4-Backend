@@ -7,6 +7,7 @@ from app.models.db_setup import engine
 
 client = TestClient(app)
 
+
 class ClienteTestCase(unittest.TestCase):
     def setUp(self):
         self.client = client
@@ -184,7 +185,6 @@ class ClienteTestCase(unittest.TestCase):
         response = self.client.post("/cliente/", json=payload)
         self.assertEqual(response.status_code, 422)
 
-
     def test_remove_cliente_inexistente(self):
         response = self.client.delete("/cliente/99999999998")
         self.assertEqual(response.status_code, 404)
@@ -267,5 +267,6 @@ class ClienteTestCase(unittest.TestCase):
         # deve retornar erro de duplicidade: 400 (violação de chave) ou 422 (validação)
         self.assertIn(response2.status_code, (400, 422))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
