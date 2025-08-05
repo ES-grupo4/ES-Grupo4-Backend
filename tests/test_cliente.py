@@ -1,9 +1,11 @@
+import io
 import unittest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from app.main import app
 from app.models.models import Cliente
 from app.models.db_setup import engine
+import polars as pl
 
 client = TestClient(app)
 
@@ -266,6 +268,77 @@ class ClienteTestCase(unittest.TestCase):
 
         # deve retornar erro de duplicidade: 400 (violação de chave) ou 422 (validação)
         self.assertIn(response2.status_code, (400, 422))
+
+    def generate_csv_bytes(self, headers: list[str], rows: list[dict]) -> bytes:
+        """Gera um CSV em bytes a partir de headers e linhas."""
+        tabela = pl.DataFrame(rows)[headers]
+        buf = io.BytesIO()
+        tabela.write_csv(buf)
+        return buf.getvalue()
+
+
+def test_upload_csv_sucesso(self):
+    # CSV válido com uma linha
+    headers = [
+        "cpf",
+        "nome",
+        "matricula",
+        "tipo",
+        "graduando",
+        "pos_graduando",
+        "bolsista",
+    ]
+    rows = [
+        {
+            "cpf": "12345678912",
+            "nome": "Cliente A",
+            "matricula": "20240210",
+            "tipo": "aluno",
+            "graduando": True,
+            "pos_graduando": False,
+            "bolsista": False,
+        },
+    ]
+    csv_bytes = self.generate_csv_bytes(headers, rows)
+
+    response = self.client.post(
+        "/cliente/upload-csv/",
+        files={"arquivo": ("clientes.csv", csv_bytes, "text/csv")},
+    )
+    self.assertEqual(response.status_code, 200)
+    data = response.json()
+    self.assertEqual(data["message"], "1 cliente(s) cadastrado(s) com sucesso.")
+
+    # Verifica no banco
+    cliente = self.db.query(Cliente).filter_by(cpf="12345678912").first()
+    self.assertIsNotNone(cliente)
+    self.assertEqual(cliente.nome, "Cliente A")
+
+    # **Limpeza**: deleta o cliente recém-criado para não interferir em próximos testes
+    self.db.delete(cliente)
+    self.db.commit()
+
+    def test_upload_csv_extensao_invalida(self):
+        csv_bytes = b"qualquer,conteudo\n"
+        response = self.client.post(
+            "/cliente/upload-csv/",
+            files={"arquivo": ("clientes.txt", csv_bytes, "text/plain")},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("deveria ser CSV", response.json()["detail"])
+
+    def test_upload_csv_colunas_faltando(self):
+        # Cabeçalho errado, faltam colunas obrigatórias
+        headers = ["cpf", "nome", "matricula"]
+        rows = [{"cpf": "55555555555", "nome": "Nome", "matricula": "20240211"}]
+        csv_bytes = self.generate_csv_bytes(headers, rows)
+
+        response = self.client.post(
+            "/cliente/upload-csv/",
+            files={"arquivo": ("clientes.csv", csv_bytes, "text/csv")},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("não contém as colunas necessárias", response.json()["detail"])
 
 
 if __name__ == "__main__":
