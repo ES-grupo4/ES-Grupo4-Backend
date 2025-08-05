@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 from app.main import app
 from app.models.models import Funcionario
 from app.models.db_setup import engine
-from datetime import date
 
 client = TestClient(app)
 

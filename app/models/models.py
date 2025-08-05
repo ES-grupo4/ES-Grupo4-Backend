@@ -55,9 +55,9 @@ class Cliente(Usuario):
     usuario_id: Mapped[int] = mapped_column(ForeignKey(Usuario.id), primary_key=True)
     matricula: Mapped[str | None] = mapped_column(String(50), nullable=True)
     tipo: Mapped[str] = mapped_column(String(50))
-    graduando: Mapped[bool] = mapped_column(Boolean)
-    pos_graduando: Mapped[bool] = mapped_column(Boolean)
-    bolsista: Mapped[bool] = mapped_column(Boolean)
+    graduando: Mapped[bool]
+    pos_graduando: Mapped[bool]
+    bolsista: Mapped[bool]
 
     __mapper_args__ = {
         "polymorphic_identity": "cliente",
@@ -68,15 +68,15 @@ class InformacoesGerais(Base):
     __tablename__ = "informacoes_gerais"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    nome_empresa: Mapped[str] = mapped_column(String())
-    preco_almoco: Mapped[int] = mapped_column(Integer)
-    preco_meia_almoco: Mapped[int] = mapped_column(Integer)
-    preco_jantar: Mapped[int] = mapped_column(Integer)
-    preco_meia_jantar: Mapped[int] = mapped_column(Integer)
-    inicio_jantar: Mapped[time] = mapped_column(Time)
-    inicio_almoco: Mapped[time] = mapped_column(Time)
-    fim_jantar: Mapped[time] = mapped_column(Time)
-    fim_almoco: Mapped[time] = mapped_column(Time)
+    nome_empresa: Mapped[str]
+    preco_almoco: Mapped[int]
+    preco_meia_almoco: Mapped[int]
+    preco_jantar: Mapped[int]
+    preco_meia_jantar: Mapped[int]
+    inicio_jantar: Mapped[time]
+    inicio_almoco: Mapped[time]
+    fim_jantar: Mapped[time]
+    fim_almoco: Mapped[time]
 
 
 class HistoricoAcoes(Base):
@@ -93,6 +93,6 @@ class Compra(Base):
     __tablename__ = "compra"
 
     usuario_id: Mapped[int] = mapped_column(ForeignKey(Usuario.id), primary_key=True)
-    local: Mapped[str] = mapped_column(String())
+    local: Mapped[str]
     forma_pagamento: Mapped[str] = mapped_column(String(50))
     horario: Mapped[datetime] = mapped_column(DateTime, primary_key=True)
