@@ -1,3 +1,4 @@
+import os
 from typing import Annotated
 from fastapi import Depends
 
@@ -6,7 +7,11 @@ from sqlalchemy.orm import Session
 
 from .models import Base
 
-engine = create_engine("sqlite:///odio.db", connect_args={"check_same_thread": False})
+bd_url = os.environ.get("DATABASE_URL")
+engine = create_engine(  # Na CI a url do BD é diferente e é settada nessa ENV
+    bd_url if bd_url else "postgresql+psycopg://nois:senha_massa@localhost:5432/ru_bd"
+)
+
 
 def get_bd():
     """
@@ -15,7 +20,6 @@ def get_bd():
     """
     with Session(engine) as bd:
         yield bd
-
 
 
 Base.metadata.create_all(engine)

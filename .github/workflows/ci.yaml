@@ -3,10 +3,25 @@ name: Test_Runner
 on: [push]
 
 jobs:
-  uv-example:
+  run-tests:
     name: python
     runs-on: ubuntu-latest
 
+    services:
+      db:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U testuser -d testdb"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
     steps:
       - uses: actions/checkout@v4
 
@@ -21,5 +36,20 @@ jobs:
       - name: Install the project
         run: uv sync --locked --all-extras --dev
 
+      - name: Wait for database service to be ready on localhost
+        run: |
+          echo "Waiting for db service to be available on localhost..."
+          while ! nc -z localhost 5432; do
+            sleep 0.1
+          done
+          echo "Database service is now ready on localhost!"
+
+      - name: Run database migrations
+        run: uv run alembic upgrade head
+        env:
+          DATABASE_URL: "postgresql+psycopg://testuser:testpassword@localhost:5432/testdb"
+        
       - name: Run tests
         run: uv run -m unittest
+        env:
+          DATABASE_URL: "postgresql+psycopg://testuser:testpassword@localhost:5432/testdb"
