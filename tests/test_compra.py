@@ -22,7 +22,7 @@ class AuthTestCase(unittest.TestCase):
         self.db.commit()
 
         compra_info = Compra(
-            id_usuario=1234,
+            usuario_id=1234,
             horario=datetime(2025, 4, 12, 10, 50),
             local="ufcg",
             forma_pagamento="pix",
@@ -40,19 +40,19 @@ class AuthTestCase(unittest.TestCase):
             "forma_pagamento": "dinheiro",
         }
 
-        response = self.client.post("/cadastra-compra/", json=payload)
+        response = self.client.post("/cadastra-compra/", data=payload)
         self.assertEqual(response.status_code, 200)
 
-        data = response.json()
-        self.assertEqual(data["horario"], payload["horario"])
+        info = response.json()
+        self.assertEqual(info["horario"], payload["horario"])
 
     def test_busca_compras(self):
         response = client.get("/retorna-compras/")
         self.assertEqual(response.status_code, 200)
 
-        data = response.json()
-        self.assertIsInstance(data, list)
-        horarios = [compra["horario"] for compra in data]
+        info = response.json()
+        self.assertIsInstance(info, list)
+        horarios = [compra["horario"] for compra in info]
         self.assertIn("10:50", horarios)
 
     def test_busca_compras_not_found(self):
@@ -70,13 +70,13 @@ class AuthTestCase(unittest.TestCase):
             "local": "ufcg",
             "forma_pagamento": "dinheiro",
         }
-        self.client.post("/cadastra-compra/", json=payload)
+        self.client.post("/cadastra-compra/", data=payload)
         response = client.get("/filtra-compras/", params={"forma_pagamento": "pix"})
         self.assertEqual(response.status_code, 200)
 
-        data = response.json()
-        self.assertIsInstance(data, list)
-        formas_pagamento = [compra["forma_pagamento"] for compra in data]
+        info = response.json()
+        self.assertIsInstance(info, list)
+        formas_pagamento = [compra["forma_pagamento"] for compra in info]
         self.assertIn("pix", formas_pagamento)
 
     def test_filtra_compras_not_found(self):
