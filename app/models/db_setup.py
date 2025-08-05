@@ -8,6 +8,7 @@ from .models import Base
 
 engine = create_engine("sqlite:///odio.db", connect_args={"check_same_thread": False})
 
+
 def get_bd():
     """
     Cria uma conexão com o BD,
@@ -15,7 +16,6 @@ def get_bd():
     """
     with Session(engine) as bd:
         yield bd
-
 
 
 Base.metadata.create_all(engine)
