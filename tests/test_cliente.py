@@ -438,6 +438,50 @@ class ClienteTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json()), 0)
 
+    def test_listar_clientes_com_multiplos_filtros(self):
+        # cria clientes de exemplo
+        clientes = [
+            {
+                "cpf": "11111111111",
+                "nome": "Alice Silva",
+                "matricula": "2024001",
+                "tipo": "aluno",
+                "graduando": True,
+                "pos_graduando": False,
+                "bolsista": True,
+            },
+            {
+                "cpf": "22222222222",
+                "nome": "Bob Santos",
+                "matricula": "2024002",
+                "tipo": "professor",
+                "graduando": False,
+                "pos_graduando": False,
+                "bolsista": False,
+            },
+            {
+                "cpf": "33333333333",
+                "nome": "Carol Pereira",
+                "matricula": "2024003",
+                "tipo": "aluno",
+                "graduando": True,
+                "pos_graduando": False,
+                "bolsista": False,
+            },
+        ]
+
+        for c in clientes:
+            self.client.post("/cliente/", json=c)
+
+        # filtro por tipo=aluno e graduando=True e bolsista=True
+        response = self.client.get(
+            "/cliente/", params={"tipo": "aluno", "graduando": True, "bolsista": True}
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["nome"], "Alice")
+
 
 if __name__ == "__main__":
     unittest.main()
