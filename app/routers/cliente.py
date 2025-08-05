@@ -52,20 +52,48 @@ def cria_cliente(cliente: ClienteIn, db: conexao_bd):
 )
 def listar_clientes(
     db: conexao_bd,
-    nome: str | None = Query(default=None, description="Filtrar por nome"),
-    matricula: str | None = Query(default=None, description="Filtrar por matrícula"),
+    nome: str | None = Query(
+        default=None, description="Filtrar por nome (parcial, case-insensitive)"
+    ),
+    matricula: str | None = Query(
+        default=None, description="Filtrar por matrícula exata"
+    ),
     tipo: ClienteEnum | None = Query(default=None, description="Filtrar por tipo"),
+    graduando: bool | None = Query(
+        default=None, description="Filtrar por quem é graduando"
+    ),
+    pos_graduando: bool | None = Query(
+        default=None, description="Filtrar por quem é pós-graduando"
+    ),
+    bolsista: bool | None = Query(
+        default=None, description="Filtrar por quem é bolsista"
+    ),
 ):
     """
-    Lista todos os clientes cadastrados, com possibilidade de filtros por nome, matrícula e tipo.
+    Lista todos os clientes cadastrados, com possibilidade de filtros por:
+    - nome (ilike %nome%)
+    - matrícula (igual)
+    - tipo
+    - graduando
+    - pos_graduando
+    - bolsista
+
+    Todos os parâmetros são opcionais e podem ser combinados.
     """
     query = select(Cliente)
-    if nome:
+
+    if nome is not None:
         query = query.where(Cliente.nome.ilike(f"%{nome}%"))
-    if matricula:
+    if matricula is not None:
         query = query.where(Cliente.matricula == matricula)
-    if tipo:
+    if tipo is not None:
         query = query.where(Cliente.tipo == tipo)
+    if graduando is not None:
+        query = query.where(Cliente.graduando == graduando)
+    if pos_graduando is not None:
+        query = query.where(Cliente.pos_graduando == pos_graduando)
+    if bolsista is not None:
+        query = query.where(Cliente.bolsista == bolsista)
 
     clientes = db.scalars(query).all()
     return clientes
