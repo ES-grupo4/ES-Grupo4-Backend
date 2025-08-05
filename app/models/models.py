@@ -1,14 +1,14 @@
-from datetime import date, datetime, time
+from datetime import datetime, time, date
 from sqlalchemy import (
-    CHAR,
-    Boolean,
-    Date,
-    DateTime,
     ForeignKey,
-    Integer,
     String,
+    DateTime,
     JSON,
     Time,
+    Date,
+    Boolean,
+    Integer,
+    CHAR,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
