@@ -73,8 +73,8 @@ class InformacoesGerais(Base):
     preco_meia_almoco: Mapped[int] = mapped_column(Integer)
     preco_jantar: Mapped[int] = mapped_column(Integer)
     preco_meia_jantar: Mapped[int] = mapped_column(Integer)
-    comeco_jantar: Mapped[time] = mapped_column(Time)
-    comeco_almoco: Mapped[time] = mapped_column(Time)
+    inicio_jantar: Mapped[time] = mapped_column(Time)
+    inicio_almoco: Mapped[time] = mapped_column(Time)
     fim_jantar: Mapped[time] = mapped_column(Time)
     fim_almoco: Mapped[time] = mapped_column(Time)
 
