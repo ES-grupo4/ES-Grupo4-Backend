@@ -8,5 +8,6 @@ dependencies = [
     "fastapi[standard]>=0.115.12",
     "sqlalchemy>=2.0.41",
     "python-jose[cryptography]",
-    "validate_docbr"
+    "validate_docbr",
+    "polars>=1.32.0"
 ]
