@@ -44,7 +44,7 @@ class FuncionarioTestCase(unittest.TestCase):
 
         # Mockando um funcionario padrão pra evitar repetição de payload
         self.funcionario_padrao = {
-            "cpf": "799.202.054-51",
+            "cpf": "79920205451",
             "nome": "John Dois",
             "senha": "John123!",
             "email": "john@dois.com",
@@ -107,7 +107,6 @@ class FuncionarioTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 422)
 
         erro = response.json()
-        print(erro)
         self.assertIn("detail", erro)
         self.assertTrue(
             any(
@@ -118,7 +117,222 @@ class FuncionarioTestCase(unittest.TestCase):
             "O erro não é de email inválido",
         )
 
-    def test_busca_funcionarios_vazio(self):
+    def test_atualiza_funcionario_com_sucesso(self):
+        self.cria_funcionario()
+        funcionario = self.busca_funcionario_por_cpf("79920205451").json()[0]
+        payload = {
+            "nome": "Fulaninho Games",
+            "senha": "Jorginho123",
+            "email": "novoemail@email.com",
+            "tipo": "funcionario",
+        }
+        response = client.patch(
+            f"/funcionario/{funcionario['id']}/",
+            json=payload,
+            headers=self.auth_headers,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            self.busca_funcionario_por_cpf("79920205451").json()[0], response.json()
+        )
+
+    def test_atualiza_funcionario_id_inexistente(self):
+        self.cria_funcionario()
+        payload = {
+            "nome": "Fulaninho Games",
+            "senha": "Jorginho123",
+            "email": "novoemail@email.com",
+            "tipo": "funcionario",
+        }
+        response = client.patch(
+            "/funcionario/99999/",
+            json=payload,
+            headers=self.auth_headers,
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual("Funcionário não encontrado", response.json()["detail"])
+
+    def test_atualiza_funcionario_sem_nome(self):
+        self.cria_funcionario()
+        funcionario = self.busca_funcionario_por_cpf("79920205451").json()[0]
+        payload = {
+            "senha": "Jorginho123",
+            "email": "novoemail@email.com",
+            "tipo": "funcionario",
+        }
+
+        response = client.patch(
+            f"/funcionario/{funcionario['id']}/",
+            json=payload,
+            headers=self.auth_headers,
+        )
+
+        payload_esperado = {
+            "cpf": funcionario["cpf"],
+            "nome": funcionario["nome"],
+            "email": "novoemail@email.com",
+            "tipo": "funcionario",
+            "data_entrada": str(date.today()),
+        }
+
+        self.assertEqual(response.status_code, 200)
+        for campo, valor in payload_esperado.items():
+            self.assertEqual(response.json()[campo], valor)
+
+    def test_atualiza_funcionario_sem_senha(self):
+        self.cria_funcionario()
+        funcionario = self.busca_funcionario_por_cpf("79920205451").json()[0]
+        payload = {
+            "nome": "Fulaninho Games",
+            "email": "novoemail@email.com",
+            "tipo": "funcionario",
+        }
+
+        response = client.patch(
+            f"/funcionario/{funcionario['id']}/",
+            json=payload,
+            headers=self.auth_headers,
+        )
+
+        payload_esperado = {
+            "cpf": funcionario["cpf"],
+            "nome": "Fulaninho Games",
+            "email": "novoemail@email.com",
+            "tipo": "funcionario",
+            "data_entrada": str(date.today()),
+        }
+
+        self.assertEqual(response.status_code, 200)
+        for campo, valor in payload_esperado.items():
+            self.assertEqual(response.json()[campo], valor)
+
+    def test_atualiza_funcionario_sem_email(self):
+        self.cria_funcionario()
+        funcionario = self.busca_funcionario_por_cpf("79920205451").json()[0]
+        payload = {
+            "nome": "Fulaninho Games",
+            "senha": "Jorginho123",
+            "tipo": "funcionario",
+        }
+
+        response = client.patch(
+            f"/funcionario/{funcionario['id']}/",
+            json=payload,
+            headers=self.auth_headers,
+        )
+
+        payload_esperado = {
+            "cpf": funcionario["cpf"],
+            "nome": "Fulaninho Games",
+            "email": funcionario["email"],
+            "tipo": "funcionario",
+            "data_entrada": str(date.today()),
+        }
+
+        self.assertEqual(response.status_code, 200)
+        for campo, valor in payload_esperado.items():
+            self.assertEqual(response.json()[campo], valor)
+
+    def test_atualiza_funcionario_sem_tipo(self):
+        self.cria_funcionario()
+        funcionario = self.busca_funcionario_por_cpf("79920205451").json()[0]
+        payload = {
+            "nome": "Fulaninho Games",
+            "senha": "Jorginho123",
+            "email": "novoemail@email.com",
+        }
+
+        response = client.patch(
+            f"/funcionario/{funcionario['id']}/",
+            json=payload,
+            headers=self.auth_headers,
+        )
+
+        payload_esperado = {
+            "cpf": funcionario["cpf"],
+            "nome": "Fulaninho Games",
+            "email": "novoemail@email.com",
+            "tipo": funcionario["tipo"],
+            "data_entrada": str(date.today()),
+        }
+
+        self.assertEqual(response.status_code, 200)
+        for campo, valor in payload_esperado.items():
+            self.assertEqual(response.json()[campo], valor)
+
+    def test_atualiza_funcionario_payload_vazio(self):
+        self.cria_funcionario()
+        funcionario = self.busca_funcionario_por_cpf("79920205451").json()[0]
+        payload = {}
+
+        response = client.patch(
+            f"/funcionario/{funcionario['id']}/",
+            json=payload,
+            headers=self.auth_headers,
+        )
+
+        payload_esperado = {
+            "cpf": funcionario["cpf"],
+            "nome": funcionario["nome"],
+            "email": funcionario["email"],
+            "tipo": funcionario["tipo"],
+            "data_entrada": str(date.today()),
+        }
+
+        self.assertEqual(response.status_code, 200)
+        for campo, valor in payload_esperado.items():
+            self.assertEqual(response.json()[campo], valor)
+
+    def test_atualiza_funcionario_email_invalido(self):
+        self.cria_funcionario()
+        funcionario = self.busca_funcionario_por_cpf("79920205451").json()[0]
+        payload = {"email": "emailinvalido.com"}
+
+        response = client.patch(
+            f"/funcionario/{funcionario['id']}/",
+            json=payload,
+            headers=self.auth_headers,
+        )
+
+        self.assertEqual(response.status_code, 422)
+
+        erro = response.json()
+        self.assertIn("detail", erro)
+        self.assertTrue(
+            any(
+                d.get("ctx", {}).get("reason")
+                == "An email address must have an @-sign."
+                for d in erro["detail"]
+            ),
+            "O erro não é de email inválido",
+        )
+
+    def test_atualiza_funcionario_tipo_invalido(self):
+        self.cria_funcionario()
+        funcionario = self.busca_funcionario_por_cpf("79920205451").json()[0]
+        payload = {"tipo": "cliente"}
+
+        response = client.patch(
+            f"/funcionario/{funcionario['id']}/",
+            json=payload,
+            headers=self.auth_headers,
+        )
+
+        self.assertEqual(response.status_code, 422)
+
+        erro = response.json()
+        self.assertIn("detail", erro)
+        self.assertTrue(
+            any(
+                d.get("ctx", {}).get("expected") == "'funcionario' or 'admin'"
+                for d in erro["detail"]
+            ),
+            "O erro não é de tipo inválido",
+        )
+
+    def test_busca_funcionarios_sem_funcionarios(self):
         # Deixa a tabela de funcionarios vazia
         self.tearDown()
         response = client.get("/funcionario/", headers=self.auth_headers)
@@ -150,6 +364,13 @@ class FuncionarioTestCase(unittest.TestCase):
             self.busca_funcionario_por_cpf("79920205451").json(), response.json()
         )
 
+    def test_busca_funcionarios_por_id_inexistente(self):
+        self.cria_funcionario()
+        response = client.get("/funcionario/?id=9999", headers=self.auth_headers)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([], response.json())
+
     def test_busca_funcionarios_por_cpf(self):
         self.cria_funcionario()
         response = client.get(
@@ -161,6 +382,15 @@ class FuncionarioTestCase(unittest.TestCase):
             self.busca_funcionario_por_cpf("79920205451").json(), response.json()
         )
 
+    def test_busca_funcionarios_por_cpf_inexistente(self):
+        self.cria_funcionario()
+        response = client.get(
+            "/funcionario/?cpf=12345678910", headers=self.auth_headers
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([], response.json())
+
     def test_busca_funcionarios_por_nome(self):
         self.funcionario_padrao["nome"] = "Joao"
         self.cria_funcionario()
@@ -171,20 +401,128 @@ class FuncionarioTestCase(unittest.TestCase):
             self.busca_funcionario_por_cpf("79920205451").json(), response.json()
         )
 
-    def test_atualiza_funcionario_inexistente(self):
-        payload = {
-            "nome": "Fulaninho Games",
-            "senha": "Jorginho123",
-            "email": "naoexiste@email.com",
-            "tipo": "funcionario",
-        }
-        response = client.patch(
-            "/funcionario/9999/", json=payload, headers=self.auth_headers
-        )
-        print(response.json())
-        self.assertEqual(response.status_code, 200)
+    def test_busca_funcionarios_por_nome_inexistente(self):
+        self.funcionario_padrao["nome"] = "Jose"
+        self.cria_funcionario()
+        response = client.get("/funcionario/?nome=Joao", headers=self.auth_headers)
 
-    def test_desativa_funcionario(self):
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([], response.json())
+
+    def test_busca_funcionarios_por_email(self):
+        self.funcionario_padrao["nome"] = "Joao"
+        self.cria_funcionario()
+        response = client.get("/funcionario/?nome=Joao", headers=self.auth_headers)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            self.busca_funcionario_por_cpf("79920205451").json(), response.json()
+        )
+
+    def test_busca_funcionarios_por_email_inexistente(self):
+        self.cria_funcionario()
+        response = client.get(
+            "/funcionario/?email=john@tres.com", headers=self.auth_headers
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([], response.json())
+
+    def test_busca_funcionarios_por_tipo_funcionario(self):
+        self.cria_funcionario()
+        response = client.get(
+            "/funcionario/?tipo=funcionario", headers=self.auth_headers
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            self.busca_funcionario_por_cpf("79920205451").json(), response.json()
+        )
+
+    def test_busca_funcionarios_por_tipo_admin(self):
+        self.cria_funcionario()
+        response = client.get("/funcionario/?tipo=admin", headers=self.auth_headers)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            self.busca_funcionario_por_cpf("19896507406").json(), response.json()
+        )
+
+    def test_busca_funcionarios_por_tipo_invalido(self):
+        self.cria_funcionario()
+        response = client.get("/funcionario/?tipo=cliente", headers=self.auth_headers)
+
+        self.assertEqual(response.status_code, 422)
+
+        erro = response.json()
+        self.assertIn("detail", erro)
+        self.assertTrue(
+            any(
+                d.get("ctx", {}).get("expected") == "'funcionario' or 'admin'"
+                for d in erro["detail"]
+            ),
+            "O erro não é de tipo inválido",
+        )
+
+    def test_busca_funcionarios_por_data_entrada(self):
+        self.cria_funcionario()
+        response = client.get("/funcionario/?data_entrada=2025-08-04")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            self.busca_funcionario_por_cpf("19896507406").json()[0], response.json()
+        )
+        self.assertNotIn(
+            self.busca_funcionario_por_cpf("79920205451").json()[0], response.json()
+        )
+
+    def test_busca_funcionarios_por_data_entrada_inexistente(self):
+        self.cria_funcionario()
+        response = client.get("/funcionario/?data_entrada=2005-02-13")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([], response.json())
+
+    def test_busca_funcionarios_por_data_saida(self):
+        self.cria_funcionario()
+        client.post("/funcionario/79920205451/desativar", headers=self.auth_headers)
+
+        data_saida = date.today()
+        response = client.get(f"/funcionario/?data_saida={data_saida}")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            self.busca_funcionario_por_cpf("79920205451").json(), response.json()
+        )
+        self.assertIsNone(
+            self.busca_funcionario_por_cpf("79920205451").json()[0]["email"]
+        )
+
+    def test_busca_funcionarios_por_data_saida_inexistente(self):
+        self.cria_funcionario()
+        data_saida = date.today()
+        response = client.get(f"/funcionario/?data_saida={data_saida}")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([], response.json())
+
+    def test_deleta_funcionario_com_sucesso(self):
+        self.cria_funcionario()
+        response = client.delete(
+            "/funcionario/?cpf=79920205451", headers=self.auth_headers
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Funcionário deletado com sucesso", response.text)
+
+    def test_deleta_funcionario_cpf_inexistente(self):
+        self.cria_funcionario()
+        response = client.delete(
+            "/funcionario/?cpf=12345678910", headers=self.auth_headers
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertIn("Funcionário não encontrado", response.text)
+
+    def test_desativa_funcionario_com_sucesso(self):
         self.cria_funcionario()
         response = client.post(
             "/funcionario/79920205451/desativar", headers=self.auth_headers
@@ -192,10 +530,10 @@ class FuncionarioTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("Funcionário desativado com sucesso", response.text)
 
-    def test_deleta_funcionario(self):
+    def test_desativa_funcionario_cpf_inexistente(self):
         self.cria_funcionario()
-        response = client.delete(
-            "/funcionario/?cpf=79920205451", headers=self.auth_headers
+        response = client.post(
+            "/funcionario/1234567910/desativar", headers=self.auth_headers
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("Funcionário deletado com sucesso", response.text)
+        self.assertEqual(response.status_code, 404)
+        self.assertIn("Funcionário não encontrado", response.text)
