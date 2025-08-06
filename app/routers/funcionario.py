@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 
-from ..models.models import Funcionario
+from ..models.models import Funcionario, Usuario
 from ..models.db_setup import conexao_bd
 from ..schemas.funcionario import (
     FuncionarioEdit,
@@ -13,6 +13,7 @@ from pydantic import EmailStr
 from datetime import date
 
 from sqlalchemy import select, update
+from sqlalchemy.orm import aliased
 from validate_docbr import CPF  # type: ignore
 
 cpf = CPF()
@@ -65,12 +66,8 @@ def cadastra_funcionario(funcionario: FuncionarioIn, db: conexao_bd):
     tags=["Funcionário"],
     dependencies=[requer_permissao("admin")],
 )
-def atualiza_funcionario(
-    funcionario_id: int, funcionario: FuncionarioEdit, db: conexao_bd
-):
-    funcionarioExistente = db.scalar(
-        select(Funcionario).where(Funcionario.id == funcionario_id)
-    )
+def atualiza_funcionario(id: int, funcionario: FuncionarioEdit, db: conexao_bd):
+    funcionarioExistente = db.scalar(select(Funcionario).where(Funcionario.id == id))
 
     if not funcionarioExistente:
         raise HTTPException(status_code=404, detail="Funcionário não encontrado")
@@ -107,16 +104,19 @@ def busca_funcionarios(
         None, description="Filtra pela data de saida do funcionário"
     ),
 ):
-    query = select(Funcionario)
+    usuario_alias = aliased(Usuario)
+    query = select(Funcionario).join(
+        usuario_alias, Funcionario.usuario_id == usuario_alias.id
+    )
 
     if id:
-        query = query.where(Funcionario.id == id)
+        query = query.where(usuario_alias.id == id)
 
     if cpf:
-        query = query.where(Funcionario.cpf == cpf)
+        query = query.where(usuario_alias.cpf == cpf)
 
     if nome:
-        query = query.where(Funcionario.nome.ilike(f"%{nome}"))
+        query = query.where(Usuario.nome.ilike(f"%{nome}%"))
 
     if tipo:
         query = query.where(Funcionario.tipo == tipo)
