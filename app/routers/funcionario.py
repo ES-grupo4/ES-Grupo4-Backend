@@ -10,9 +10,10 @@ from ..schemas.funcionario import (
 )
 from ..utils.permissoes import requer_permissao
 from pydantic import EmailStr
+from datetime import date
 
-from sqlalchemy import select
-from validate_docbr import CPF
+from sqlalchemy import select, update
+from validate_docbr import CPF  # type: ignore
 
 cpf = CPF()
 
@@ -50,6 +51,7 @@ def cadastra_funcionario(funcionario: FuncionarioIn, db: conexao_bd):
         senha=funcionario.senha,
         email=funcionario.email,
         tipo=funcionario.tipo.lower(),
+        data_entrada=date.today(),
     )
 
     db.add(usuario)
@@ -92,11 +94,17 @@ def busca_funcionarios(
     id: int | None = Query(None, description="Filtra pelo id do funcionário"),
     cpf: str | None = Query(None, description="Filtra pelo cpf do funcionário"),
     nome: str | None = Query(None, description="Filtra pelo nome do funcionário"),
+    email: EmailStr | None = Query(
+        None, description="Filtra pelo email do funcionário"
+    ),
     tipo: tipoFuncionarioEnum | None = Query(
         None, description="Filtra pelo tipo do funcionário"
     ),
-    email: EmailStr | None = Query(
-        None, description="Filtra pelo email do funcionário"
+    data_entrada: date | None = Query(
+        None, description="Filtra pela data de entrada do funcionário"
+    ),
+    data_saida: date | None = Query(
+        None, description="Filtra pela data de saida do funcionário"
     ),
 ):
     query = select(Funcionario)
@@ -114,7 +122,13 @@ def busca_funcionarios(
         query = query.where(Funcionario.tipo == tipo)
 
     if email:
-        query = query.where(Funcionario.email == tipo)
+        query = query.where(Funcionario.email == email)
+
+    if data_entrada:
+        query = query.where(Funcionario.data_entrada == data_entrada)
+
+    if data_saida:
+        query = query.where(Funcionario.data_saida == data_saida)
 
     usuarios = db.scalars(query).all()
     return usuarios
@@ -135,3 +149,28 @@ def deleta_funcionario(db: conexao_bd, cpf: str):
     db.delete(funcionario)
     db.commit()
     return {"message": "Funcionário deletado com sucesso"}
+
+
+@router.post(
+    "/{cpf}/desativar",
+    summary="Desativa um funcionário pelo CPF (LGPD)",
+    tags=["Funcionário"],
+    dependencies=[requer_permissao("admin")],
+)
+def desativa_funcionario(db: conexao_bd, cpf: str):
+    cpf = cpf.replace(".", "").replace("-", "")
+    funcionario = db.scalar(select(Funcionario).where(Funcionario.cpf == cpf))
+    if not funcionario:
+        raise HTTPException(status_code=404, detail="Funcionário não encontrado")
+
+    if funcionario.data_saida is not None:
+        raise HTTPException(status_code=400, detail="Funcionário já foi desativado")
+
+    db.execute(
+        update(Funcionario)
+        .where(Funcionario.cpf == cpf)
+        .values(email=None, data_saida=date.today())
+    )
+    db.commit()
+
+    return {"message": "Funcionário desativado com sucesso"}

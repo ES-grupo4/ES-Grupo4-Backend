@@ -1,7 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 
 
-# coloquei LoginDTO porque LoginIn fica estranho
 class LoginDTO(BaseModel):
     cpf: str
     senha: str
