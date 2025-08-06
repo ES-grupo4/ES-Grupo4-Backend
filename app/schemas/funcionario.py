@@ -41,10 +41,10 @@ class FuncionarioIn(BaseModel):
 
 
 class FuncionarioEdit(BaseModel):
-    nome: str
-    senha: str
-    email: EmailStr
-    tipo: tipoFuncionarioEnum
+    nome: str | None = None
+    senha: str | None = None
+    email: EmailStr | None = None
+    tipo: tipoFuncionarioEnum | None = None
 
     model_config = ConfigDict(
         json_schema_extra={
