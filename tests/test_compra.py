@@ -1,3 +1,5 @@
+import io
+import polars as pl
 import unittest
 from fastapi.testclient import TestClient
 from app.main import app
@@ -40,48 +42,123 @@ class AuthTestCase(unittest.TestCase):
             "forma_pagamento": "dinheiro",
         }
 
-        response = self.client.post("/cadastra-compra/", data=payload)
-        self.assertEqual(response.status_code, 200)
+        response = self.client.post("/compra/cadastra-compra/", data=payload)
+        self.assertEqual(response.status_code, 201)
 
         info = response.json()
         self.assertEqual(info["horario"], payload["horario"])
+        self.assertEqual(info, {"message": "Compra cadastrada com sucesso"})
+
+    def generate_csv_bytes(self, headers: list[str], rows: list[dict]) -> bytes:
+        tabela = pl.DataFrame(rows)[headers]
+        buf = io.BytesIO()
+        tabela.write_csv(buf)
+        return buf.getvalue()
+
+    def test_cadastra_csv_sucesso(self):
+        headers = [
+            "usuario_id",
+            "horario",
+            "local",
+            "forma_pagamento",
+        ]
+        rows = [
+            {
+                "usuario_id": 5678,
+                "horario": "2025-04-12T10:50:00",
+                "local": "ufcg",
+                "forma_pagamento": "dinheiro",
+            },
+        ]
+        csv_bytes = self.generate_csv_bytes(headers, rows)
+
+        response = self.client.post(
+            "/compra/cadastra-compra-csv/",
+            files={"arquivo": ("compras.csv", csv_bytes, "text/csv")},
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["message"], "1 compra(s) cadastrada(s) com sucesso.")
+
+        compra = self.db.query(Compra).filter_by(forma_pagamento="dinheiro").first()
+        self.assertIsNotNone(compra)
+
+    def test_cadastra_csv_extensao_invalida(self):
+        csv_bytes = b"qualquer,conteudo\n"
+        response = self.client.post(
+            "/compra/cadastra-compra-csv/",
+            files={"arquivo": ("compras.txt", csv_bytes, "text/plain")},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("O arquivo deveria ser CSV.", response.json()["detail"])
+
+    def test_cadastra_csv_colunas_faltando(self):
+        headers = ["usuario_id", "horario", "local"]
+        rows = [
+            {
+                "usuario_id": 5678,
+                "horario": "2025-04-12T10:50:00",
+                "local": "ufcg",
+            }
+        ]
+        csv_bytes = self.generate_csv_bytes(headers, rows)
+
+        response = self.client.post(
+            "/compra/cadastra-compra-csv",
+            files={"arquivo": ("compras.csv", csv_bytes, "text/csv")},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn(
+            "O CSV não contém as colunas necessárias.", response.json()["detail"]
+        )
 
     def test_busca_compras(self):
-        response = client.get("/retorna-compras/")
+        response = client.get("/compra/retorna-compras/")
         self.assertEqual(response.status_code, 200)
 
         info = response.json()
         self.assertIsInstance(info, list)
         horarios = [compra["horario"] for compra in info]
-        self.assertIn("10:50", horarios)
+        self.assertIn("2025-04-12T10:50:00", horarios)
 
     def test_busca_compras_not_found(self):
         self.db.query(Compra).delete()
         self.db.commit()
         self.tearDown()
-        response = self.client.get("/retorna-compras/")
+        response = self.client.get("/compra/retorna-compras/")
         self.assertEqual(response.status_code, 404)
         assert response.json() == {"detail": "Nenhuma compra cadastrada no sistema"}
 
     def test_filtra_compras(self):
-        payload = {
-            "usuario_id": 5678,
-            "horario": datetime(2025, 6, 20, 11, 20),
-            "local": "ufcg",
-            "forma_pagamento": "dinheiro",
-        }
-        self.client.post("/cadastra-compra/", data=payload)
-        response = client.get("/filtra-compras/", params={"forma_pagamento": "pix"})
-        self.assertEqual(response.status_code, 200)
+        compras = [
+            {
+                "usuario_id": 5678,
+                "horario": datetime(2025, 6, 20, 11, 20),
+                "local": "ufcg",
+                "forma_pagamento": "dinheiro",
+            },
+            {
+                "usuario_id": 9101,
+                "horario": datetime(2025, 4, 13, 12, 00),
+                "local": "ufcg",
+                "forma_pagamento": "pix",
+            },
+        ]
 
+        for i in compras:
+            self.client.post("/compra/cadastra-compra/", data=i)
+
+        response = self.client.get(
+            "/compra/filtra-compras/", params={"forma_pagamento": "pix"}
+        )
+        self.assertEqual(response.status_code, 200)
         info = response.json()
-        self.assertIsInstance(info, list)
-        formas_pagamento = [compra["forma_pagamento"] for compra in info]
-        self.assertIn("pix", formas_pagamento)
+        self.assertEqual(len(info), 1)
+        self.assertEqual(info[1]["usuario_id"], 9101)
 
     def test_filtra_compras_not_found(self):
         response = self.client.get(
-            "/filtra-compras/", params={"forma_pagamento": "dinheiro"}
+            "/compra/filtra-compras/", params={"forma_pagamento": "dinheiro"}
         )
         self.assertEqual(response.status_code, 404)
         assert response.json() == {
@@ -92,8 +169,12 @@ class AuthTestCase(unittest.TestCase):
         self.db.query(Compra).delete()
         self.db.commit()
         self.tearDown()
-        response = self.client.get("/filtra-compras/")
+        response = self.client.get("/compra/filtra-compras/")
         self.assertEqual(response.status_code, 404)
         assert response.json() == {
             "detail": "Nenhuma compra encontrada com os filtros fornecidos"
         }
+
+
+if __name__ == "__main__":
+    unittest.main()

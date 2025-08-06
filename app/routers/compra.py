@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Query
+from fastapi import APIRouter, UploadFile, File, HTTPException, Query, status
 import io
 import polars as pl
 from sqlalchemy import select
@@ -7,7 +7,6 @@ from ..models.models import Compra
 from ..models.models import Cliente
 from ..schemas.compra import CompraIn, CompraOut
 from datetime import datetime
-from typing import Optional
 
 compra_router = APIRouter(prefix="/compra", tags=["Compra"])
 router = compra_router
@@ -16,6 +15,7 @@ router = compra_router
 @router.post(
     "/cadastra-compra/",
     summary="Cadastra uma compra no sistema",
+    status_code=status.HTTP_201_CREATED,
 )
 def cadastra_compra(compra: CompraIn, db: conexao_bd):
     nova_compra = Compra(
@@ -25,11 +25,13 @@ def cadastra_compra(compra: CompraIn, db: conexao_bd):
         forma_pagamento=compra.forma_pagamento,
     )
     db.add(nova_compra)
+    db.commit()
     return {"message": "Compra cadastrada com sucesso"}
 
 
 @router.post(
-    "/cadastra-compra-csv/", summary="Cadastra uma compra no sistema por meio de csv"
+    "/cadastra-compra-csv/",
+    summary="Cadastra uma compra no sistema por meio de csv",
 )
 async def cadastra_compra_csv(db: conexao_bd, arquivo: UploadFile = File(...)):
     if not arquivo.filename.endswith(".csv"):  # type: ignore
@@ -96,38 +98,34 @@ def compras(db: conexao_bd):
 )
 def filtra_compra(
     db: conexao_bd,
-    horario: Optional[datetime] = Query(
-        None, description="Filtra por horário da compra"
+    horario: datetime | None = Query(
+        default=None, description="Filtra por horário da compra"
     ),
-    local: Optional[str] = Query(None, description="Filtra por local da compra"),
-    forma_pagamento: Optional[str] = Query(
-        None, description="Filtra por forma de pagamento da compra"
+    local: str | None = Query(default=None, description="Filtra por local da compra"),
+    forma_pagamento: str | None = Query(
+        default=None, description="Filtra por forma de pagamento da compra"
     ),
-    comprador: Optional[str] = Query(
-        None, description="Filtra por comprador responsável pela compra"
+    comprador: str | None = Query(
+        default=None, description="Filtra por comprador responsável pela compra"
     ),
-    categoria_comprador: Optional[str] = Query(
-        None, description="Filtra por categoria do comprador"
+    categoria_comprador: str | None = Query(
+        default=None, description="Filtra por categoria do comprador"
     ),
 ):
     query = db.query(Compra).join(Cliente, Compra.usuario_id == Cliente.usuario_id)
-    filtros = []
 
     if horario is not None:
-        filtros.append(Compra.horario == horario)
+        query = query.where(Compra.horario == horario)
     if local is not None:
-        filtros.append(Compra.local.ilike(f"%{local}%"))
+        query = query.where(Compra.local.ilike(f"%{local}%"))
     if forma_pagamento is not None:
-        filtros.append(Compra.forma_pagamento.ilike(f"%{forma_pagamento}%"))
+        query = query.where(Compra.forma_pagamento.ilike(f"%{forma_pagamento}%"))
     if comprador is not None:
-        filtros.append(Cliente.nome.ilike(f"%{comprador}%"))
+        query = query.where(Cliente.nome.ilike(f"%{comprador}%"))
     if categoria_comprador is not None:
-        filtros.append(Cliente.tipo.ilike(f"%{categoria_comprador}%"))
+        query = query.where(Cliente.tipo.ilike(f"%{categoria_comprador}%"))
 
-    if filtros:
-        query = query.filter(*filtros)
-
-    saida = query.all()
+    saida = db.scalars(query).all()
 
     if not saida:
         raise HTTPException(
