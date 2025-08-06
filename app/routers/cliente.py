@@ -115,6 +115,7 @@ def remover_cliente(cpf: str, db: conexao_bd):
             detail="Cliente não encontrado",
         )
     db.delete(cliente)
+    db.commit()
 
 
 @cliente_router.put(

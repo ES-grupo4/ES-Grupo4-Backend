@@ -108,7 +108,7 @@ class ClienteTestCase(unittest.TestCase):
         response = self.client.delete(f"/cliente/{payload['cpf']}")
         self.assertEqual(response.status_code, 204)
         response = self.client.get(f"/cliente/{payload['cpf']}")
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 404)
 
     def test_criar_cliente_sem_campo_obrigatorio(self):
         payload = {
