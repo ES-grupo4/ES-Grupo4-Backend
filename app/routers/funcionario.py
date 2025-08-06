@@ -12,7 +12,7 @@ from ..utils.permissoes import requer_permissao
 from pydantic import EmailStr
 from datetime import date
 
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.orm import aliased
 from validate_docbr import CPF  # type: ignore
 
@@ -159,18 +159,21 @@ def deleta_funcionario(db: conexao_bd, cpf: str):
 )
 def desativa_funcionario(db: conexao_bd, cpf: str):
     cpf = cpf.replace(".", "").replace("-", "")
-    funcionario = db.scalar(select(Funcionario).where(Funcionario.cpf == cpf))
+
+    usuario_alias = aliased(Usuario)
+    funcionario = db.scalar(
+        select(Funcionario)
+        .join(usuario_alias, Funcionario.usuario_id == usuario_alias.id)
+        .where(usuario_alias.cpf == cpf)
+    )
     if not funcionario:
         raise HTTPException(status_code=404, detail="Funcionário não encontrado")
 
     if funcionario.data_saida is not None:
         raise HTTPException(status_code=400, detail="Funcionário já foi desativado")
 
-    db.execute(
-        update(Funcionario)
-        .where(Funcionario.cpf == cpf)
-        .values(email=None, data_saida=date.today())
-    )
+    funcionario.email = None
+    funcionario.data_saida = date.today()
     db.commit()
 
     return {"message": "Funcionário desativado com sucesso"}
