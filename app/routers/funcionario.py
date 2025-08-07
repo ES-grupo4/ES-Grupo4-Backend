@@ -22,11 +22,17 @@ funcionarios_router = APIRouter(prefix="/funcionario", tags=["Funcionário"])
 router = funcionarios_router
 
 
-def valida_funcionario(funcionario: FuncionarioIn, db: conexao_bd):
-    funcionario.cpf = funcionario.cpf.replace(".", "").replace("-", "")
+def valida_e_retorna_cpf(funcionario_cpf: str):
+    funcionario_cpf = funcionario_cpf.replace(".", "").replace("-", "")
 
-    if not cpf.validate(funcionario.cpf):
+    if not cpf.validate(funcionario_cpf):
         raise HTTPException(status_code=400, detail="CPF inválido")
+
+    return funcionario_cpf
+
+
+def valida_funcionario(funcionario: FuncionarioIn, db: conexao_bd):
+    funcionario.cpf = valida_e_retorna_cpf(funcionario.cpf)
 
     if funcionario.cpf in db.scalars(select(Funcionario.cpf)):
         raise HTTPException(status_code=409, detail="CPF já cadastrado no sistema")
@@ -141,7 +147,7 @@ def busca_funcionarios(
     dependencies=[requer_permissao("admin")],
 )
 def deleta_funcionario(db: conexao_bd, cpf: str):
-    cpf = cpf.replace(".", "").replace("-", "")
+    cpf = valida_e_retorna_cpf(cpf)
     funcionario = db.scalar(select(Funcionario).where(Funcionario.cpf == cpf))
     if not funcionario:
         raise HTTPException(status_code=404, detail="Funcionário não encontrado")
@@ -157,8 +163,8 @@ def deleta_funcionario(db: conexao_bd, cpf: str):
     tags=["Funcionário"],
     dependencies=[requer_permissao("admin")],
 )
-def desativa_funcionario(db: conexao_bd, cpf: str):
-    cpf = cpf.replace(".", "").replace("-", "")
+def desativa_funcionario(db: conexao_bd, cpf: str, data_saida: date):
+    cpf = valida_e_retorna_cpf(cpf)
 
     usuario_alias = aliased(Usuario)
     funcionario = db.scalar(
@@ -173,7 +179,7 @@ def desativa_funcionario(db: conexao_bd, cpf: str):
         raise HTTPException(status_code=400, detail="Funcionário já foi desativado")
 
     funcionario.email = None
-    funcionario.data_saida = date.today()
+    funcionario.data_saida = data_saida
     db.commit()
 
     return {"message": "Funcionário desativado com sucesso"}
