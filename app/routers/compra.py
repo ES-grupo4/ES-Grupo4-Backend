@@ -112,7 +112,11 @@ def filtra_compra(
         default=None, description="Filtra por categoria do comprador"
     ),
 ):
-    query = db.query(Compra).join(Cliente, Compra.usuario_id == Cliente.usuario_id)
+    query = (
+        select(Compra)
+        .select_from(Compra)
+        .join(Cliente, Compra.usuario_id == Cliente.usuario_id)
+    )
 
     if horario is not None:
         query = query.where(Compra.horario == horario)

@@ -1,9 +1,10 @@
+import unittest
 import io
 import polars as pl
-import unittest
 from fastapi.testclient import TestClient
 from app.main import app
 from app.models.models import Compra
+from app.models.models import Cliente
 from app.models.db_setup import engine
 from sqlalchemy.orm import Session
 from datetime import datetime
@@ -11,7 +12,7 @@ from datetime import datetime
 client = TestClient(app)
 
 
-class AuthTestCase(unittest.TestCase):
+class CompraTestCase(unittest.TestCase):
     def tearDown(self):
         self.db.query(Compra).delete()
         self.db.commit()
@@ -23,12 +24,26 @@ class AuthTestCase(unittest.TestCase):
         self.db.query(Compra).delete()
         self.db.commit()
 
+        cliente_info = Cliente(
+            cpf="99999999999",
+            nome="Fulano",
+            matricula="20249999",
+            tipo="aluno",
+            graduando=False,
+            pos_graduando=True,
+            bolsista=False,
+        )
+
         compra_info = Compra(
-            usuario_id=1234,
+            usuario_id=1,
             horario=datetime(2025, 4, 12, 10, 50),
             local="ufcg",
             forma_pagamento="pix",
         )
+
+        self.db.add(cliente_info)
+        self.db.commit()
+        self.db.refresh(cliente_info)
 
         self.db.add(compra_info)
         self.db.commit()
@@ -36,7 +51,7 @@ class AuthTestCase(unittest.TestCase):
 
     def test_cadastra_sucesso(self):
         payload = {
-            "usuario_id": 5678,
+            "usuario_id": 1,
             "horario": datetime(2025, 6, 20, 11, 20),
             "local": "ufcg",
             "forma_pagamento": "dinheiro",
@@ -132,13 +147,13 @@ class AuthTestCase(unittest.TestCase):
     def test_filtra_compras(self):
         compras = [
             {
-                "usuario_id": 5678,
+                "usuario_id": 1,
                 "horario": datetime(2025, 6, 20, 11, 20),
                 "local": "ufcg",
                 "forma_pagamento": "dinheiro",
             },
             {
-                "usuario_id": 9101,
+                "usuario_id": 1,
                 "horario": datetime(2025, 4, 13, 12, 00),
                 "local": "ufcg",
                 "forma_pagamento": "pix",
@@ -154,7 +169,7 @@ class AuthTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         info = response.json()
         self.assertEqual(len(info), 1)
-        self.assertEqual(info[1]["usuario_id"], 9101)
+        self.assertEqual(info[1]["horario"], "2025-04-13T12:00:00")
 
     def test_filtra_compras_not_found(self):
         response = self.client.get(
