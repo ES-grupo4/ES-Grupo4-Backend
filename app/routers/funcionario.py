@@ -59,7 +59,7 @@ def cadastra_funcionario(funcionario: FuncionarioIn, db: conexao_bd):
     return {"message": "Funcionário cadastrado com sucesso"}
 
 
-@router.patch(
+@router.put(
     "/{id}/",
     response_model=FuncionarioOut,
     summary="Atualiza os dados de um funcionário",

@@ -126,7 +126,7 @@ class FuncionarioTestCase(unittest.TestCase):
             "email": "novoemail@email.com",
             "tipo": "funcionario",
         }
-        response = client.patch(
+        response = client.put(
             f"/funcionario/{funcionario['id']}/",
             json=payload,
             headers=self.auth_headers,
@@ -145,7 +145,7 @@ class FuncionarioTestCase(unittest.TestCase):
             "email": "novoemail@email.com",
             "tipo": "funcionario",
         }
-        response = client.patch(
+        response = client.put(
             "/funcionario/99999/",
             json=payload,
             headers=self.auth_headers,
@@ -163,7 +163,7 @@ class FuncionarioTestCase(unittest.TestCase):
             "tipo": "funcionario",
         }
 
-        response = client.patch(
+        response = client.put(
             f"/funcionario/{funcionario['id']}/",
             json=payload,
             headers=self.auth_headers,
@@ -190,7 +190,7 @@ class FuncionarioTestCase(unittest.TestCase):
             "tipo": "funcionario",
         }
 
-        response = client.patch(
+        response = client.put(
             f"/funcionario/{funcionario['id']}/",
             json=payload,
             headers=self.auth_headers,
@@ -217,7 +217,7 @@ class FuncionarioTestCase(unittest.TestCase):
             "tipo": "funcionario",
         }
 
-        response = client.patch(
+        response = client.put(
             f"/funcionario/{funcionario['id']}/",
             json=payload,
             headers=self.auth_headers,
@@ -244,7 +244,7 @@ class FuncionarioTestCase(unittest.TestCase):
             "email": "novoemail@email.com",
         }
 
-        response = client.patch(
+        response = client.put(
             f"/funcionario/{funcionario['id']}/",
             json=payload,
             headers=self.auth_headers,
@@ -267,7 +267,7 @@ class FuncionarioTestCase(unittest.TestCase):
         funcionario = self.busca_funcionario_por_cpf("79920205451").json()[0]
         payload = {}
 
-        response = client.patch(
+        response = client.put(
             f"/funcionario/{funcionario['id']}/",
             json=payload,
             headers=self.auth_headers,
@@ -290,7 +290,7 @@ class FuncionarioTestCase(unittest.TestCase):
         funcionario = self.busca_funcionario_por_cpf("79920205451").json()[0]
         payload = {"email": "emailinvalido.com"}
 
-        response = client.patch(
+        response = client.put(
             f"/funcionario/{funcionario['id']}/",
             json=payload,
             headers=self.auth_headers,
@@ -314,7 +314,7 @@ class FuncionarioTestCase(unittest.TestCase):
         funcionario = self.busca_funcionario_por_cpf("79920205451").json()[0]
         payload = {"tipo": "cliente"}
 
-        response = client.patch(
+        response = client.put(
             f"/funcionario/{funcionario['id']}/",
             json=payload,
             headers=self.auth_headers,
