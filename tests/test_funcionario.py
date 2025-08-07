@@ -485,9 +485,12 @@ class FuncionarioTestCase(unittest.TestCase):
 
     def test_busca_funcionarios_por_data_saida(self):
         self.cria_funcionario()
-        client.post("/funcionario/79920205451/desativar", headers=self.auth_headers)
-
         data_saida = date.today()
+        client.post(
+            f"/funcionario/79920205451/desativar?data_saida={data_saida}",
+            headers=self.auth_headers,
+        )
+
         response = client.get(f"/funcionario/?data_saida={data_saida}")
 
         self.assertEqual(response.status_code, 200)
@@ -517,23 +520,27 @@ class FuncionarioTestCase(unittest.TestCase):
     def test_deleta_funcionario_cpf_inexistente(self):
         self.cria_funcionario()
         response = client.delete(
-            "/funcionario/?cpf=12345678910", headers=self.auth_headers
+            "/funcionario/?cpf=80799286575", headers=self.auth_headers
         )
         self.assertEqual(response.status_code, 404)
         self.assertIn("Funcionário não encontrado", response.text)
 
     def test_desativa_funcionario_com_sucesso(self):
         self.cria_funcionario()
+        data_saida = date.today()
         response = client.post(
-            "/funcionario/79920205451/desativar", headers=self.auth_headers
+            f"/funcionario/79920205451/desativar?data_saida={data_saida}",
+            headers=self.auth_headers,
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn("Funcionário desativado com sucesso", response.text)
 
     def test_desativa_funcionario_cpf_inexistente(self):
         self.cria_funcionario()
+        data_saida = date.today()
         response = client.post(
-            "/funcionario/1234567910/desativar", headers=self.auth_headers
+            f"/funcionario/80799286575/desativar?data_saida={data_saida}",
+            headers=self.auth_headers,
         )
         self.assertEqual(response.status_code, 404)
         self.assertIn("Funcionário não encontrado", response.text)
