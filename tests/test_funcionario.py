@@ -75,7 +75,7 @@ class FuncionarioTestCase(unittest.TestCase):
         self.assertIn("Funcionário cadastrado com sucesso", response.text)
 
     def test_cadastro_funcionario_cpf_invalido(self):
-        self.funcionario_padrao["cpf"] = "1234578910"
+        self.funcionario_padrao["cpf"] = "12345678910"
         response = self.cria_funcionario()
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()["detail"], "CPF inválido")
