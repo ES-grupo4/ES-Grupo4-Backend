@@ -1,6 +1,7 @@
 from enum import Enum
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, StringConstraints
 from datetime import date
+from typing import Annotated
 
 
 class tipoFuncionarioEnum(str, Enum):
@@ -19,7 +20,9 @@ class FuncionarioOut(BaseModel):
 
 
 class FuncionarioIn(BaseModel):
-    cpf: str
+    cpf: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=11, max_length=14)
+    ]
     nome: str
     senha: str
     email: EmailStr
@@ -29,7 +32,7 @@ class FuncionarioIn(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "cpf": "198.965.074-06",
+                "cpf": "19896507406",
                 "nome": "John Doe",
                 "senha": "John123!",
                 "email": "john@doe.com",
@@ -45,6 +48,8 @@ class FuncionarioEdit(BaseModel):
     senha: str | None = None
     email: EmailStr | None = None
     tipo: tipoFuncionarioEnum | None = None
+    data_entrada: date | None = None
+    data_saida: date | None = None
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -53,6 +58,8 @@ class FuncionarioEdit(BaseModel):
                 "senha": "John123!",
                 "email": "john@doe.com",
                 "tipo": "admin",
+                "data_entrada": "2025-08-07",
+                "data_saida": None
             }
         }
     )
