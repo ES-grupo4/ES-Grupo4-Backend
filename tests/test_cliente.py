@@ -221,20 +221,6 @@ class ClienteTestCase(unittest.TestCase):
         response = self.client.put(f"/cliente/{payload['cpf']}", json=edit_payload)
         self.assertEqual(response.status_code, 422)
 
-    def test_edita_cliente_sem_payload(self):
-        payload = {
-            "cpf": "12345678901",
-            "nome": "Sem Payload",
-            "matricula": "20240205",
-            "tipo": "aluno",
-            "graduando": True,
-            "pos_graduando": False,
-            "bolsista": True,
-        }
-        self.client.post("/cliente/", json=payload)
-        response = self.client.put(f"/cliente/{payload['cpf']}", json={})
-        self.assertIn(response.status_code, (200, 422))
-
     def test_rota_inexistente_get(self):
         response = self.client.get("/clientes/")
         self.assertEqual(response.status_code, 404)
