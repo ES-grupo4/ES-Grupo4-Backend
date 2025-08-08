@@ -6,6 +6,7 @@ import polars as pl
 from ..models.db_setup import conexao_bd
 from ..models.models import Cliente
 from ..schemas.cliente import ClienteEdit, ClienteIn, ClienteOut, ClienteEnum
+from ..utils.validacao import valida_e_retorna_cpf
 
 cliente_router = APIRouter(
     prefix="/cliente",
@@ -23,8 +24,9 @@ def cria_cliente(cliente: ClienteIn, db: conexao_bd):
     """
     Cria um cliente no sistema.
     """
+    cliente.cpf = valida_e_retorna_cpf(cliente.cpf)
     novo = Cliente(
-        cpf=str(cliente.cpf),
+        cpf=cliente.cpf,
         nome=cliente.nome,
         matricula=cliente.matricula,
         tipo=cliente.tipo,
@@ -108,6 +110,7 @@ def remover_cliente(cpf: str, db: conexao_bd):
     """
     Remove um cliente do sistema a partir do CPF.
     """
+    cpf = valida_e_retorna_cpf(cpf)
     cliente = db.scalar(select(Cliente).where(Cliente.cpf == cpf))
     if not cliente:
         raise HTTPException(
@@ -115,6 +118,7 @@ def remover_cliente(cpf: str, db: conexao_bd):
             detail="Cliente não encontrado",
         )
     db.delete(cliente)
+    db.commit()
 
 
 @cliente_router.put(
@@ -126,6 +130,7 @@ def editar_cliente(cpf: str, dados: ClienteEdit, db: conexao_bd):
     """
     Edita os dados de um cliente existente, exceto CPF, ID e tipo.
     """
+    cpf = valida_e_retorna_cpf(cpf)
     cliente = db.scalar(select(Cliente).where(Cliente.cpf == cpf))
     if not cliente:
         raise HTTPException(
@@ -148,6 +153,7 @@ def buscar_cliente(cpf: str, db: conexao_bd):
     """
     Retorna os dados de um cliente a partir do CPF.
     """
+    cpf = valida_e_retorna_cpf(cpf)
     cliente = db.scalar(select(Cliente).where(Cliente.cpf == cpf))
     if not cliente:
         raise HTTPException(

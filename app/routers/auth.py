@@ -1,6 +1,6 @@
 from fastapi import Depends, APIRouter, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import JWTError, jwt
+from jose import JWTError, jwt # type: ignore
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import select
 from ..models.models import Funcionario
@@ -50,7 +50,8 @@ async def get_usuario_atual(
 
 
 def get_usuario_por_cpf(db: conexao_bd, cpf: str):
-    usuario = db.scalars(select(Funcionario).where(Funcionario.cpf == cpf)).first()
+    cpf = cpf.replace(".", "").replace("-", "")
+    usuario = db.scalar(select(Funcionario).where(Funcionario.cpf == cpf))
     return usuario
 
 
