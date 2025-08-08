@@ -9,6 +9,7 @@ from ..schemas.funcionario import (
     tipoFuncionarioEnum,
 )
 from ..utils.permissoes import requer_permissao
+from ..utils.validacao import valida_e_retorna_cpf
 from pydantic import EmailStr
 from datetime import date
 
@@ -20,15 +21,6 @@ cpf = CPF()
 
 funcionarios_router = APIRouter(prefix="/funcionario", tags=["Funcionário"])
 router = funcionarios_router
-
-
-def valida_e_retorna_cpf(funcionario_cpf: str):
-    funcionario_cpf = funcionario_cpf.replace(".", "").replace("-", "")
-
-    if not cpf.validate(funcionario_cpf):
-        raise HTTPException(status_code=400, detail="CPF inválido")
-
-    return funcionario_cpf
 
 
 def valida_funcionario(funcionario: FuncionarioIn, db: conexao_bd):
@@ -110,19 +102,16 @@ def busca_funcionarios(
         None, description="Filtra pela data de saida do funcionário"
     ),
 ):
-    usuario_alias = aliased(Usuario)
-    query = select(Funcionario).join(
-        usuario_alias, Funcionario.usuario_id == usuario_alias.id
-    )
+    query = select(Funcionario)
 
     if id:
-        query = query.where(usuario_alias.id == id)
+        query = query.where(Funcionario.id == id)
 
     if cpf:
-        query = query.where(usuario_alias.cpf == cpf)
+        query = query.where(Funcionario.cpf == cpf)
 
     if nome:
-        query = query.where(Usuario.nome.ilike(f"%{nome}%"))
+        query = query.where(Funcionario.nome.ilike(f"%{nome}%"))
 
     if tipo:
         query = query.where(Funcionario.tipo == tipo)
@@ -166,12 +155,7 @@ def deleta_funcionario(db: conexao_bd, cpf: str):
 def desativa_funcionario(db: conexao_bd, cpf: str, data_saida: date):
     cpf = valida_e_retorna_cpf(cpf)
 
-    usuario_alias = aliased(Usuario)
-    funcionario = db.scalar(
-        select(Funcionario)
-        .join(usuario_alias, Funcionario.usuario_id == usuario_alias.id)
-        .where(usuario_alias.cpf == cpf)
-    )
+    funcionario = db.scalar(select(Funcionario).where(Funcionario.cpf == cpf))
     if not funcionario:
         raise HTTPException(status_code=404, detail="Funcionário não encontrado")
 
