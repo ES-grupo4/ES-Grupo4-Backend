@@ -76,7 +76,7 @@ class ClienteOut(BaseModel):
 class ClienteEdit(BaseModel):
     nome: str | None = None
     matricula: Annotated[
-        str | None, StringConstraints(strip_whitespace=True, max_length=9)
+        str | None, StringConstraints(strip_whitespace=True, min_length=1, max_length=9)
     ] = None
     tipo: ClienteEnum | None = None
     graduando: bool | None = None

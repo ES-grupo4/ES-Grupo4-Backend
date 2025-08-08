@@ -204,7 +204,7 @@ class ClienteTestCase(unittest.TestCase):
         self.client.post("/cliente/", json=payload)
         edit_payload = {"matricula": ""}
         response = self.client.put(f"/cliente/{payload['cpf']}", json=edit_payload)
-        self.assertIn(response.status_code, (200, 422))
+        self.assertEqual(response.status_code, 422)
 
     def test_edita_cliente_tipo_invalido(self):
         payload = {
@@ -219,7 +219,7 @@ class ClienteTestCase(unittest.TestCase):
         self.client.post("/cliente/", json=payload)
         edit_payload = {"tipo": "externoX"}
         response = self.client.put(f"/cliente/{payload['cpf']}", json=edit_payload)
-        self.assertIn(response.status_code, (200, 422))
+        self.assertEqual(response.status_code, 422)
 
     def test_edita_cliente_sem_payload(self):
         payload = {
