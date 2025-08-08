@@ -25,6 +25,7 @@ def cadastra_compra(compra: CompraIn, db: conexao_bd):
         forma_pagamento=compra.forma_pagamento,
     )
     db.add(nova_compra)
+    db.commit()
     return {"message": "Compra cadastrada com sucesso"}
 
 

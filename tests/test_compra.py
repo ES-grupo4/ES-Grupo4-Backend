@@ -158,7 +158,7 @@ class CompraTestCase(unittest.TestCase):
             },
             {
                 "usuario_id": cliente.usuario_id,
-                "horario": datetime(2025, 4, 13, 12, 00, 0).isoformat(),
+                "horario": datetime(2023, 4, 13, 12, 00, 0).isoformat(),
                 "local": "ufcg",
                 "forma_pagamento": "pix",
             },
@@ -173,7 +173,7 @@ class CompraTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         info = response.json()
         self.assertEqual(len(info), 2)
-        self.assertEqual(info[1]["horario"], "2025-04-13T12:00:00")
+        self.assertEqual(info[1]["horario"], "2023-04-13T12:00:00")
 
     def test_filtra_compras_not_found(self):
         response = self.client.get(
