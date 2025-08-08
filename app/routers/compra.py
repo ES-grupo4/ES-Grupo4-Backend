@@ -25,7 +25,6 @@ def cadastra_compra(compra: CompraIn, db: conexao_bd):
         forma_pagamento=compra.forma_pagamento,
     )
     db.add(nova_compra)
-    db.commit()
     return {"message": "Compra cadastrada com sucesso"}
 
 
@@ -51,7 +50,7 @@ async def cadastra_compra_csv(db: conexao_bd, arquivo: UploadFile = File(...)):
     }
     if not required_columns.issubset(set(tabela_csv.columns)):
         raise HTTPException(
-            status_code=400, detail="O CSV não contém as colunas necessárias."
+            status_code=422, detail="O CSV não contém as colunas necessárias."
         )
 
     inseridas = 0
@@ -59,7 +58,7 @@ async def cadastra_compra_csv(db: conexao_bd, arquivo: UploadFile = File(...)):
         try:
             compra = Compra(
                 usuario_id=int(linha["usuario_id"]),
-                horario=datetime.strptime(linha["horario"], "%Y-%m-%d %H:%M:%S"),
+                horario=datetime.fromisoformat(linha["horario"]),
                 local=str(linha["local"]),
                 forma_pagamento=str(linha["forma_pagamento"]),
             )
@@ -67,9 +66,9 @@ async def cadastra_compra_csv(db: conexao_bd, arquivo: UploadFile = File(...)):
             db.commit()
             inseridas += 1
         except Exception as e:
-            print(f"Erro ao cadastrar {linha['nome']}: {e}")
-            db.rollback()
-            continue
+            raise HTTPException(
+                status_code=422, detail=f"Erro ao cadastrar {linha}: {e}"
+            )
 
     return {"message": f"{inseridas} compra(s) cadastrada(s) com sucesso."}
 

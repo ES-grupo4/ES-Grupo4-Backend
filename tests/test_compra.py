@@ -9,13 +9,29 @@ from app.models.db_setup import engine
 from sqlalchemy.orm import Session
 from datetime import datetime
 
+
 client = TestClient(app)
+cliente = Cliente(
+    cpf="99999999999",
+    nome="Fulano",
+    matricula="20249999",
+    tipo="aluno",
+    graduando=False,
+    pos_graduando=True,
+    bolsista=False,
+)
 
 
 class CompraTestCase(unittest.TestCase):
+    @classmethod
+    def tearDownClass(self):
+        db = Session(bind=engine)
+        db.delete(cliente)
+        db.commit()
+        db.close()
+
     def tearDown(self):
         self.db.query(Compra).delete()
-        self.db.commit()
         self.db.close()
 
     def setUp(self):
@@ -24,16 +40,6 @@ class CompraTestCase(unittest.TestCase):
         self.db.query(Compra).delete()
         self.db.commit()
 
-        cliente_info = Cliente(
-            cpf="99999999999",
-            nome="Fulano",
-            matricula="20249999",
-            tipo="aluno",
-            graduando=False,
-            pos_graduando=True,
-            bolsista=False,
-        )
-
         compra_info = Compra(
             usuario_id=1,
             horario=datetime(2025, 4, 12, 10, 50),
@@ -41,9 +47,9 @@ class CompraTestCase(unittest.TestCase):
             forma_pagamento="pix",
         )
 
-        self.db.add(cliente_info)
+        self.db.add(cliente)
         self.db.commit()
-        self.db.refresh(cliente_info)
+        self.db.refresh(cliente)
 
         self.db.add(compra_info)
         self.db.commit()
@@ -52,16 +58,14 @@ class CompraTestCase(unittest.TestCase):
     def test_cadastra_sucesso(self):
         payload = {
             "usuario_id": 1,
-            "horario": datetime(2025, 6, 20, 11, 20),
+            "horario": datetime(2025, 6, 20, 11, 20).isoformat(),
             "local": "ufcg",
             "forma_pagamento": "dinheiro",
         }
-
-        response = self.client.post("/compra/cadastra-compra/", data=payload)
+        response = self.client.post("/compra/cadastra-compra/", json=payload)
         self.assertEqual(response.status_code, 201)
 
         info = response.json()
-        self.assertEqual(info["horario"], payload["horario"])
         self.assertEqual(info, {"message": "Compra cadastrada com sucesso"})
 
     def generate_csv_bytes(self, headers: list[str], rows: list[dict]) -> bytes:
@@ -122,7 +126,7 @@ class CompraTestCase(unittest.TestCase):
             "/compra/cadastra-compra-csv",
             files={"arquivo": ("compras.csv", csv_bytes, "text/csv")},
         )
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 422)
         self.assertIn(
             "O CSV não contém as colunas necessárias.", response.json()["detail"]
         )
@@ -147,28 +151,28 @@ class CompraTestCase(unittest.TestCase):
     def test_filtra_compras(self):
         compras = [
             {
-                "usuario_id": 1,
-                "horario": datetime(2025, 6, 20, 11, 20),
+                "usuario_id": cliente.usuario_id,
+                "horario": datetime(2025, 6, 20, 11, 20).isoformat(),
                 "local": "ufcg",
                 "forma_pagamento": "dinheiro",
             },
             {
-                "usuario_id": 1,
-                "horario": datetime(2025, 4, 13, 12, 00),
+                "usuario_id": cliente.usuario_id,
+                "horario": datetime(2025, 4, 13, 12, 00, 0).isoformat(),
                 "local": "ufcg",
                 "forma_pagamento": "pix",
             },
         ]
 
         for i in compras:
-            self.client.post("/compra/cadastra-compra/", data=i)
+            self.client.post("/compra/cadastra-compra/", json=i)
 
         response = self.client.get(
             "/compra/filtra-compras/", params={"forma_pagamento": "pix"}
         )
         self.assertEqual(response.status_code, 200)
         info = response.json()
-        self.assertEqual(len(info), 1)
+        self.assertEqual(len(info), 2)
         self.assertEqual(info[1]["horario"], "2025-04-13T12:00:00")
 
     def test_filtra_compras_not_found(self):
