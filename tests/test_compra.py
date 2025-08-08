@@ -62,7 +62,7 @@ class CompraTestCase(unittest.TestCase):
             "local": "ufcg",
             "forma_pagamento": "dinheiro",
         }
-        response = self.client.post("/compra/cadastra-compra/", json=payload)
+        response = self.client.post("/compra/", json=payload)
         self.assertEqual(response.status_code, 201)
 
         info = response.json()
@@ -92,7 +92,7 @@ class CompraTestCase(unittest.TestCase):
         csv_bytes = self.generate_csv_bytes(headers, rows)
 
         response = self.client.post(
-            "/compra/cadastra-compra-csv/",
+            "/compra/csv/",
             files={"arquivo": ("compras.csv", csv_bytes, "text/csv")},
         )
         self.assertEqual(response.status_code, 200)
@@ -105,7 +105,7 @@ class CompraTestCase(unittest.TestCase):
     def test_cadastra_csv_extensao_invalida(self):
         csv_bytes = b"qualquer,conteudo\n"
         response = self.client.post(
-            "/compra/cadastra-compra-csv/",
+            "/compra/csv/",
             files={"arquivo": ("compras.txt", csv_bytes, "text/plain")},
         )
         self.assertEqual(response.status_code, 400)
@@ -123,7 +123,7 @@ class CompraTestCase(unittest.TestCase):
         csv_bytes = self.generate_csv_bytes(headers, rows)
 
         response = self.client.post(
-            "/compra/cadastra-compra-csv",
+            "/compra/csv",
             files={"arquivo": ("compras.csv", csv_bytes, "text/csv")},
         )
         self.assertEqual(response.status_code, 422)
@@ -132,7 +132,7 @@ class CompraTestCase(unittest.TestCase):
         )
 
     def test_busca_compras(self):
-        response = client.get("/compra/retorna-compras/")
+        response = client.get("/compra/")
         self.assertEqual(response.status_code, 200)
 
         info = response.json()
@@ -144,9 +144,11 @@ class CompraTestCase(unittest.TestCase):
         self.db.query(Compra).delete()
         self.db.commit()
         self.tearDown()
-        response = self.client.get("/compra/retorna-compras/")
+        response = self.client.get("/compra/")
         self.assertEqual(response.status_code, 404)
-        assert response.json() == {"detail": "Nenhuma compra cadastrada no sistema"}
+        assert response.json() == {
+            "detail": "Nenhuma compra encontrada com os filtros fornecidos"
+        }
 
     def test_filtra_compras(self):
         compras = [
@@ -165,20 +167,16 @@ class CompraTestCase(unittest.TestCase):
         ]
 
         for i in compras:
-            self.client.post("/compra/cadastra-compra/", json=i)
+            self.client.post("/compra/", json=i)
 
-        response = self.client.get(
-            "/compra/filtra-compras/", params={"forma_pagamento": "pix"}
-        )
+        response = self.client.get("/compra/", params={"forma_pagamento": "pix"})
         self.assertEqual(response.status_code, 200)
         info = response.json()
         self.assertEqual(len(info), 2)
         self.assertEqual(info[1]["horario"], "2023-04-13T12:00:00")
 
     def test_filtra_compras_not_found(self):
-        response = self.client.get(
-            "/compra/filtra-compras/", params={"forma_pagamento": "dinheiro"}
-        )
+        response = self.client.get("/compra/", params={"forma_pagamento": "dinheiro"})
         self.assertEqual(response.status_code, 404)
         assert response.json() == {
             "detail": "Nenhuma compra encontrada com os filtros fornecidos"
@@ -188,7 +186,7 @@ class CompraTestCase(unittest.TestCase):
         self.db.query(Compra).delete()
         self.db.commit()
         self.tearDown()
-        response = self.client.get("/compra/filtra-compras/")
+        response = self.client.get("/compra/")
         self.assertEqual(response.status_code, 404)
         assert response.json() == {
             "detail": "Nenhuma compra encontrada com os filtros fornecidos"
