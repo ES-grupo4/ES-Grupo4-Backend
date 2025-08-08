@@ -24,7 +24,7 @@ cliente = Cliente(
 
 class CompraTestCase(unittest.TestCase):
     @classmethod
-    def tearDownClass(self):
+    def tearDownClass(cls):
         db = Session(bind=engine)
         db.delete(cliente)
         db.commit()

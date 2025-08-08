@@ -59,7 +59,7 @@ class FuncionarioEdit(BaseModel):
                 "email": "john@doe.com",
                 "tipo": "admin",
                 "data_entrada": "2025-08-07",
-                "data_saida": None
+                "data_saida": None,
             }
         }
     )

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 
-from ..models.models import Funcionario, Usuario
+from ..models.models import Funcionario
 from ..models.db_setup import conexao_bd
 from ..schemas.funcionario import (
     FuncionarioEdit,
@@ -14,7 +14,6 @@ from pydantic import EmailStr
 from datetime import date
 
 from sqlalchemy import select
-from sqlalchemy.orm import aliased
 from validate_docbr import CPF  # type: ignore
 
 cpf = CPF()
