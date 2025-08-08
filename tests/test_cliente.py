@@ -17,7 +17,7 @@ class ClienteTestCase(unittest.TestCase):
         # Limpa clientes com CPFs usados nos testes antes de cada teste
         cpfs_testados = [
             "12345678901",
-            "99999999999",
+            "39410861977",
             "1111111111",
             "222222222222",
             "33333abc33a",
@@ -31,9 +31,9 @@ class ClienteTestCase(unittest.TestCase):
     def tearDown(self):
         # Limpa clientes após cada teste para garantir isolamento
         cpfs_testados = [
-            "12345678901",
-            "99999999999",
-            "1111111111",
+            "39410861977",
+            "88451210031",
+            "36452746006",
             "222222222222",
             "33333abc33a",
         ]
@@ -46,7 +46,7 @@ class ClienteTestCase(unittest.TestCase):
 
     def test_cria_cliente(self):
         payload = {
-            "cpf": "99999999999",
+            "cpf": "39410861977",
             "nome": "Cliente Independente",
             "matricula": "20249999",
             "tipo": "aluno",
@@ -61,7 +61,7 @@ class ClienteTestCase(unittest.TestCase):
 
     def test_busca_cliente_criado(self):
         payload = {
-            "cpf": "12345678901",
+            "cpf": "39410861977",
             "nome": "Cliente Setup",
             "matricula": "20240001",
             "tipo": "aluno",
@@ -78,7 +78,7 @@ class ClienteTestCase(unittest.TestCase):
 
     def test_listar_clientes(self):
         payload = {
-            "cpf": "12345678901",
+            "cpf": "39410861977",
             "nome": "Cliente Listar",
             "matricula": "20240002",
             "tipo": "aluno",
@@ -96,7 +96,7 @@ class ClienteTestCase(unittest.TestCase):
 
     def test_remove_cliente(self):
         payload = {
-            "cpf": "12345678901",
+            "cpf": "39410861977",
             "nome": "Cliente Remove",
             "matricula": "20240003",
             "tipo": "aluno",
@@ -172,7 +172,7 @@ class ClienteTestCase(unittest.TestCase):
             "bolsista": False,
         }
         response = self.client.post("/cliente/", json=payload)
-        self.assertEqual(response.status_code, 422)
+        self.assertEqual(response.status_code, 400)
 
     def test_criar_cliente_cpf_alfanumerico(self):
         payload = {
@@ -185,15 +185,15 @@ class ClienteTestCase(unittest.TestCase):
             "bolsista": False,
         }
         response = self.client.post("/cliente/", json=payload)
-        self.assertEqual(response.status_code, 422)
+        self.assertEqual(response.status_code, 400)
 
     def test_remove_cliente_inexistente(self):
-        response = self.client.delete("/cliente/99999999998")
+        response = self.client.delete("/cliente/39410861977")
         self.assertEqual(response.status_code, 404)
 
     def test_edita_cliente_matricula_invalida(self):
         payload = {
-            "cpf": "12345678901",
+            "cpf": "39410861977",
             "nome": "Para Editar",
             "matricula": "20240203",
             "tipo": "aluno",
@@ -204,11 +204,11 @@ class ClienteTestCase(unittest.TestCase):
         self.client.post("/cliente/", json=payload)
         edit_payload = {"matricula": ""}
         response = self.client.put(f"/cliente/{payload['cpf']}", json=edit_payload)
-        self.assertIn(response.status_code, (200, 422))
+        self.assertEqual(response.status_code, 422)
 
     def test_edita_cliente_tipo_invalido(self):
         payload = {
-            "cpf": "12345678901",
+            "cpf": "39410861977",
             "nome": "Para Editar Tipo",
             "matricula": "20240204",
             "tipo": "tecnico",
@@ -219,11 +219,11 @@ class ClienteTestCase(unittest.TestCase):
         self.client.post("/cliente/", json=payload)
         edit_payload = {"tipo": "externoX"}
         response = self.client.put(f"/cliente/{payload['cpf']}", json=edit_payload)
-        self.assertIn(response.status_code, (200, 422))
+        self.assertEqual(response.status_code, 422)
 
     def test_edita_cliente_sem_payload(self):
         payload = {
-            "cpf": "12345678901",
+            "cpf": "39410861977",
             "nome": "Sem Payload",
             "matricula": "20240205",
             "tipo": "aluno",
@@ -233,7 +233,7 @@ class ClienteTestCase(unittest.TestCase):
         }
         self.client.post("/cliente/", json=payload)
         response = self.client.put(f"/cliente/{payload['cpf']}", json={})
-        self.assertIn(response.status_code, (200, 422))
+        self.assertEqual(response.status_code, 200)
 
     def test_rota_inexistente_get(self):
         response = self.client.get("/clientes/")
@@ -244,7 +244,7 @@ class ClienteTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 405)
 
     def test_metodo_nao_permitido(self):
-        response = self.client.post(f"/cliente/12345678901")
+        response = self.client.post("/cliente/12345678901")
         self.assertEqual(response.status_code, 405)
 
     def test_criar_cliente_duplicado(self):
@@ -259,7 +259,7 @@ class ClienteTestCase(unittest.TestCase):
             "bolsista": False,
         }
         # cria pela primeira vez — deve funcionar
-        response1 = self.client.post("/cliente/", json=payload)
+        self.client.post("/cliente/", json=payload)
 
         # tenta criar novamente com o mesmo CPF
         payload2 = payload.copy()
@@ -267,7 +267,7 @@ class ClienteTestCase(unittest.TestCase):
         response2 = self.client.post("/cliente/", json=payload2)
 
         # deve retornar erro de duplicidade: 400 (violação de chave) ou 422 (validação)
-        self.assertIn(response2.status_code, (400, 422))
+        self.assertEqual(response2.status_code, 400)
 
     def generate_csv_bytes(self, headers: list[str], rows: list[dict]) -> bytes:
         """Gera um CSV em bytes a partir de headers e linhas."""
@@ -310,7 +310,7 @@ class ClienteTestCase(unittest.TestCase):
 
         # Verifica no banco
         cliente = self.db.query(Cliente).filter_by(cpf="12345678912").first()
-        self.assertIsNotNone(cliente)
+        assert cliente is not None
         self.assertEqual(cliente.nome, "Cliente A")
 
         # **Limpeza**: deleta o cliente recém-criado para não interferir em próximos testes
@@ -342,7 +342,7 @@ class ClienteTestCase(unittest.TestCase):
     def test_filtrar_por_nome(self):
         clientes = [
             {
-                "cpf": "11111111111",
+                "cpf": "39410861977",
                 "nome": "Alice",
                 "matricula": "MAT001",
                 "tipo": "aluno",
@@ -351,7 +351,7 @@ class ClienteTestCase(unittest.TestCase):
                 "bolsista": True,
             },
             {
-                "cpf": "22222222222",
+                "cpf": "88451210031",
                 "nome": "Bob",
                 "matricula": "MAT002",
                 "tipo": "tecnico",
@@ -360,7 +360,7 @@ class ClienteTestCase(unittest.TestCase):
                 "bolsista": False,
             },
             {
-                "cpf": "33333333333",
+                "cpf": "36452746006",
                 "nome": "Alicia",
                 "matricula": "MAT003",
                 "tipo": "professor",
@@ -382,7 +382,7 @@ class ClienteTestCase(unittest.TestCase):
         self.client.post(
             "/cliente/",
             json={
-                "cpf": "22222222222",
+                "cpf": "88451210031",
                 "nome": "Bob",
                 "matricula": "MAT002",
                 "tipo": "tecnico",
@@ -400,7 +400,7 @@ class ClienteTestCase(unittest.TestCase):
         self.client.post(
             "/cliente/",
             json={
-                "cpf": "33333333333",
+                "cpf": "39410861977",
                 "nome": "Alicia",
                 "matricula": "MAT003",
                 "tipo": "professor",
@@ -418,7 +418,7 @@ class ClienteTestCase(unittest.TestCase):
         self.client.post(
             "/cliente/",
             json={
-                "cpf": "11111111111",
+                "cpf": "39410861977",
                 "nome": "Alice",
                 "matricula": "MAT001",
                 "tipo": "aluno",
@@ -442,7 +442,7 @@ class ClienteTestCase(unittest.TestCase):
         # cria clientes de exemplo
         clientes = [
             {
-                "cpf": "11111111111",
+                "cpf": "39410861977",
                 "nome": "Alice Silva",
                 "matricula": "2024001",
                 "tipo": "aluno",
@@ -451,7 +451,7 @@ class ClienteTestCase(unittest.TestCase):
                 "bolsista": True,
             },
             {
-                "cpf": "22222222222",
+                "cpf": "88451210031",
                 "nome": "Bob Santos",
                 "matricula": "2024002",
                 "tipo": "professor",
@@ -460,7 +460,7 @@ class ClienteTestCase(unittest.TestCase):
                 "bolsista": False,
             },
             {
-                "cpf": "33333333333",
+                "cpf": "36452746006",
                 "nome": "Carol Pereira",
                 "matricula": "2024003",
                 "tipo": "aluno",
@@ -480,7 +480,7 @@ class ClienteTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(len(data), 1)
-        self.assertEqual(data[0]["nome"], "Alice")
+        self.assertIn("Alice", data[0]["nome"])
 
 
 if __name__ == "__main__":
