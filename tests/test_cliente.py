@@ -49,7 +49,7 @@ class ClienteTestCase(unittest.TestCase):
             "cpf": "39410861977",
             "nome": "Cliente Independente",
             "matricula": "20249999",
-            "tipo": "aluno",
+            "tipo": "ALUNO",
             "graduando": False,
             "pos_graduando": True,
             "bolsista": False,
@@ -64,7 +64,7 @@ class ClienteTestCase(unittest.TestCase):
             "cpf": "39410861977",
             "nome": "Cliente Setup",
             "matricula": "20240001",
-            "tipo": "aluno",
+            "tipo": "ALUNO",
             "graduando": True,
             "pos_graduando": False,
             "bolsista": True,
@@ -81,7 +81,7 @@ class ClienteTestCase(unittest.TestCase):
             "cpf": "39410861977",
             "nome": "Cliente Listar",
             "matricula": "20240002",
-            "tipo": "aluno",
+            "tipo": "ALUNO",
             "graduando": True,
             "pos_graduando": False,
             "bolsista": True,
@@ -99,7 +99,7 @@ class ClienteTestCase(unittest.TestCase):
             "cpf": "39410861977",
             "nome": "Cliente Remove",
             "matricula": "20240003",
-            "tipo": "aluno",
+            "tipo": "ALUNO",
             "graduando": True,
             "pos_graduando": False,
             "bolsista": True,
@@ -114,7 +114,7 @@ class ClienteTestCase(unittest.TestCase):
         payload = {
             "cpf": "12345678999",  # falta nome
             "matricula": "20240125",
-            "tipo": "aluno",
+            "tipo": "ALUNO",
             "graduando": True,
             "pos_graduando": False,
             "bolsista": False,
@@ -140,7 +140,7 @@ class ClienteTestCase(unittest.TestCase):
             "cpf": "12345678988",
             "nome": "Cliente Matrícula Inválida",
             "matricula": "",  # campo inválido
-            "tipo": "aluno",
+            "tipo": "ALUNO",
             "graduando": True,
             "pos_graduando": False,
             "bolsista": False,
@@ -153,7 +153,7 @@ class ClienteTestCase(unittest.TestCase):
             "cpf": "1111111111",  # 10 dígitos
             "nome": "CPF Curto",
             "matricula": "20240130",
-            "tipo": "aluno",
+            "tipo": "ALUNO",
             "graduando": False,
             "pos_graduando": False,
             "bolsista": False,
@@ -196,7 +196,7 @@ class ClienteTestCase(unittest.TestCase):
             "cpf": "39410861977",
             "nome": "Para Editar",
             "matricula": "20240203",
-            "tipo": "aluno",
+            "tipo": "ALUNO",
             "graduando": False,
             "pos_graduando": True,
             "bolsista": False,
@@ -226,7 +226,7 @@ class ClienteTestCase(unittest.TestCase):
             "cpf": "39410861977",
             "nome": "Sem Payload",
             "matricula": "20240205",
-            "tipo": "aluno",
+            "tipo": "ALUNO",
             "graduando": True,
             "pos_graduando": False,
             "bolsista": True,
@@ -253,7 +253,7 @@ class ClienteTestCase(unittest.TestCase):
             "cpf": "55566677788",
             "nome": "Cliente Original",
             "matricula": "20240300",
-            "tipo": "aluno",
+            "tipo": "ALUNO",
             "graduando": True,
             "pos_graduando": False,
             "bolsista": False,
@@ -292,7 +292,7 @@ class ClienteTestCase(unittest.TestCase):
                 "cpf": "12345678912",
                 "nome": "Cliente A",
                 "matricula": "20240210",
-                "tipo": "aluno",
+                "tipo": "ALUNO",
                 "graduando": True,
                 "pos_graduando": False,
                 "bolsista": False,
@@ -345,7 +345,7 @@ class ClienteTestCase(unittest.TestCase):
                 "cpf": "39410861977",
                 "nome": "Alice",
                 "matricula": "MAT001",
-                "tipo": "aluno",
+                "tipo": "ALUNO",
                 "graduando": True,
                 "pos_graduando": False,
                 "bolsista": True,
@@ -421,7 +421,7 @@ class ClienteTestCase(unittest.TestCase):
                 "cpf": "39410861977",
                 "nome": "Alice",
                 "matricula": "MAT001",
-                "tipo": "aluno",
+                "tipo": "ALUNO",
                 "graduando": True,
                 "pos_graduando": False,
                 "bolsista": True,
@@ -445,7 +445,7 @@ class ClienteTestCase(unittest.TestCase):
                 "cpf": "39410861977",
                 "nome": "Alice Silva",
                 "matricula": "2024001",
-                "tipo": "aluno",
+                "tipo": "ALUNO",
                 "graduando": True,
                 "pos_graduando": False,
                 "bolsista": True,
@@ -463,7 +463,7 @@ class ClienteTestCase(unittest.TestCase):
                 "cpf": "36452746006",
                 "nome": "Carol Pereira",
                 "matricula": "2024003",
-                "tipo": "aluno",
+                "tipo": "ALUNO",
                 "graduando": True,
                 "pos_graduando": False,
                 "bolsista": False,
@@ -475,7 +475,7 @@ class ClienteTestCase(unittest.TestCase):
 
         # filtro por tipo=aluno e graduando=True e bolsista=True
         response = self.client.get(
-            "/cliente/", params={"tipo": "aluno", "graduando": True, "bolsista": True}
+            "/cliente/", params={"tipo": "ALUNO", "graduando": True, "bolsista": True}
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()

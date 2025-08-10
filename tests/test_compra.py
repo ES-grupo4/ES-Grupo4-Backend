@@ -15,7 +15,7 @@ cliente = Cliente(
     cpf="99999999999",
     nome="Fulano",
     matricula="20249999",
-    tipo="aluno",
+    tipo="ALUNO",
     graduando=False,
     pos_graduando=True,
     bolsista=False,
@@ -44,7 +44,7 @@ class CompraTestCase(unittest.TestCase):
             usuario_id=1,
             horario=datetime(2025, 4, 12, 10, 50),
             local="ufcg",
-            forma_pagamento="pix",
+            forma_pagamento="PIX",
         )
 
         self.db.add(cliente)
@@ -60,7 +60,7 @@ class CompraTestCase(unittest.TestCase):
             "usuario_id": 1,
             "horario": datetime(2025, 6, 20, 11, 20).isoformat(),
             "local": "ufcg",
-            "forma_pagamento": "dinheiro",
+            "forma_pagamento": "DINHEIRO",
         }
         response = self.client.post("/compra/", json=payload)
         self.assertEqual(response.status_code, 201)
@@ -86,7 +86,7 @@ class CompraTestCase(unittest.TestCase):
                 "usuario_id": 5678,
                 "horario": "2025-04-12T10:50:00",
                 "local": "ufcg",
-                "forma_pagamento": "dinheiro",
+                "forma_pagamento": "DINHEIRO",
             },
         ]
         csv_bytes = self.generate_csv_bytes(headers, rows)
@@ -99,7 +99,7 @@ class CompraTestCase(unittest.TestCase):
         data = response.json()
         self.assertEqual(data["message"], "1 compra(s) cadastrada(s) com sucesso.")
 
-        compra = self.db.query(Compra).filter_by(forma_pagamento="dinheiro").first()
+        compra = self.db.query(Compra).filter_by(forma_pagamento="DINHEIRO").first()
         self.assertIsNotNone(compra)
 
     def test_cadastra_csv_extensao_invalida(self):
@@ -156,27 +156,27 @@ class CompraTestCase(unittest.TestCase):
                 "usuario_id": cliente.usuario_id,
                 "horario": datetime(2025, 6, 20, 11, 20).isoformat(),
                 "local": "ufcg",
-                "forma_pagamento": "dinheiro",
+                "forma_pagamento": "DINHEIRO",
             },
             {
                 "usuario_id": cliente.usuario_id,
                 "horario": datetime(2023, 4, 13, 12, 00, 0).isoformat(),
                 "local": "ufcg",
-                "forma_pagamento": "pix",
+                "forma_pagamento": "PIX",
             },
         ]
 
         for i in compras:
             self.client.post("/compra/", json=i)
 
-        response = self.client.get("/compra/", params={"forma_pagamento": "pix"})
+        response = self.client.get("/compra/", params={"forma_pagamento": "PIX"})
         self.assertEqual(response.status_code, 200)
         info = response.json()
         self.assertEqual(len(info), 2)
         self.assertEqual(info[1]["horario"], "2023-04-13T12:00:00")
 
     def test_filtra_compras_not_found(self):
-        response = self.client.get("/compra/", params={"forma_pagamento": "dinheiro"})
+        response = self.client.get("/compra/", params={"forma_pagamento": "DINHEIRO"})
         self.assertEqual(response.status_code, 404)
         assert response.json() == {
             "detail": "Nenhuma compra encontrada com os filtros fornecidos"

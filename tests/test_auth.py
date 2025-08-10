@@ -17,7 +17,7 @@ class AuthTestCase(unittest.TestCase):
             "nome": "John Doe",
             "senha": "John123!",
             "email": "john@doe.com",
-            "tipo": "admin",
+            "tipo": "ADMIN",
             "data_entrada": date(2025, 8, 4),
         }
 
