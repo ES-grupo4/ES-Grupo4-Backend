@@ -33,7 +33,6 @@ class FormaPagamentoCompra(PyEnum):
 class Base(DeclarativeBase):
     pass
 
-
 class Usuario(Base):
     __tablename__ = "usuario"
 
