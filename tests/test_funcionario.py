@@ -18,7 +18,7 @@ class FuncionarioTestCase(unittest.TestCase):
             "nome": "John Doe",
             "senha": "John123!",
             "email": "john@doe.com",
-            "tipo": "ADMIN",
+            "tipo": "admin",
             "data_entrada": date(2025, 8, 4),
         }
 
@@ -48,7 +48,7 @@ class FuncionarioTestCase(unittest.TestCase):
             "nome": "John Dois",
             "senha": "John123!",
             "email": "john@dois.com",
-            "tipo": "FUNCIONARIO",
+            "tipo": "funcionario",
             "data_entrada": "2025-08-04",
         }
 
@@ -124,7 +124,7 @@ class FuncionarioTestCase(unittest.TestCase):
             "nome": "Fulaninho Games",
             "senha": "Jorginho123",
             "email": "novoemail@email.com",
-            "tipo": "FUNCIONARIO",
+            "tipo": "funcionario",
         }
         response = client.put(
             f"/funcionario/{funcionario['id']}/",
@@ -143,7 +143,7 @@ class FuncionarioTestCase(unittest.TestCase):
             "nome": "Fulaninho Games",
             "senha": "Jorginho123",
             "email": "novoemail@email.com",
-            "tipo": "FUNCIONARIO",
+            "tipo": "funcionario",
         }
         response = client.put(
             "/funcionario/99999/",
@@ -160,7 +160,7 @@ class FuncionarioTestCase(unittest.TestCase):
         payload = {
             "senha": "Jorginho123",
             "email": "novoemail@email.com",
-            "tipo": "FUNCIONARIO",
+            "tipo": "funcionario",
         }
 
         response = client.put(
@@ -173,7 +173,7 @@ class FuncionarioTestCase(unittest.TestCase):
             "cpf": funcionario["cpf"],
             "nome": funcionario["nome"],
             "email": "novoemail@email.com",
-            "tipo": "FUNCIONARIO",
+            "tipo": "funcionario",
             "data_entrada": str(date.today()),
         }
 
@@ -187,7 +187,7 @@ class FuncionarioTestCase(unittest.TestCase):
         payload = {
             "nome": "Fulaninho Games",
             "email": "novoemail@email.com",
-            "tipo": "FUNCIONARIO",
+            "tipo": "funcionario",
         }
 
         response = client.put(
@@ -200,7 +200,7 @@ class FuncionarioTestCase(unittest.TestCase):
             "cpf": funcionario["cpf"],
             "nome": "Fulaninho Games",
             "email": "novoemail@email.com",
-            "tipo": "FUNCIONARIO",
+            "tipo": "funcionario",
             "data_entrada": str(date.today()),
         }
 
@@ -214,7 +214,7 @@ class FuncionarioTestCase(unittest.TestCase):
         payload = {
             "nome": "Fulaninho Games",
             "senha": "Jorginho123",
-            "tipo": "FUNCIONARIO",
+            "tipo": "funcionario",
         }
 
         response = client.put(
@@ -227,7 +227,7 @@ class FuncionarioTestCase(unittest.TestCase):
             "cpf": funcionario["cpf"],
             "nome": "Fulaninho Games",
             "email": funcionario["email"],
-            "tipo": "FUNCIONARIO",
+            "tipo": "funcionario",
             "data_entrada": str(date.today()),
         }
 
@@ -326,7 +326,7 @@ class FuncionarioTestCase(unittest.TestCase):
         self.assertIn("detail", erro)
         self.assertTrue(
             any(
-                d.get("ctx", {}).get("expected") == "'FUNCIONARIO' or 'ADMIN'"
+                d.get("ctx", {}).get("expected") == "'funcionario' or 'ADMIN'"
                 for d in erro["detail"]
             ),
             "O erro não é de tipo inválido",
@@ -458,7 +458,7 @@ class FuncionarioTestCase(unittest.TestCase):
         self.assertIn("detail", erro)
         self.assertTrue(
             any(
-                d.get("ctx", {}).get("expected") == "'FUNCIONARIO' or 'ADMIN'"
+                d.get("ctx", {}).get("expected") == "'funcionario' or 'ADMIN'"
                 for d in erro["detail"]
             ),
             "O erro não é de tipo inválido",

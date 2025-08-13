@@ -5,22 +5,22 @@ from enum import Enum as PyEnum
 
 
 class ClienteTipo(PyEnum):
-    EXTERNO = "externo"
-    PROFESSOR = "professor"
-    ALUNO = "aluno"
-    TECNICO = "tecnico"
+    externo = "externo"
+    professor = "professor"
+    aluno = "aluno"
+    tecnico = "tecnico"
 
 
 class FuncionarioTipo(PyEnum):
-    ADMIN = "admin"
-    FUNCIONARIO = "funcionario"
+    admin = "admin"
+    funcionario = "funcionario"
 
 
 class FormaPagamentoCompra(PyEnum):
-    CREDITO = "credito"
-    PIX = "pix"
-    DEBITO = "debito"
-    DINHEIRO = "dinheiro"
+    credito = "credito"
+    pix = "pix"
+    debito = "debito"
+    dinheiro = "dinheiro"
 
 
 class Base(DeclarativeBase):
@@ -37,7 +37,6 @@ class Usuario(Base):
 
     __mapper_args__ = {
         "polymorphic_on": subtipo,
-        "polymorphic_abstract": True,
     }
 
     def __repr__(self) -> str:
