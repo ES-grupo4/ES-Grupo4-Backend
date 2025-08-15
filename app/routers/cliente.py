@@ -1,19 +1,18 @@
 import io
 from math import ceil
 from fastapi import APIRouter, File, HTTPException, UploadFile, status, Query
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 import polars as pl
 from ..models.db_setup import conexao_bd
 from ..models.models import Cliente
-from ..schemas.cliente import ClienteEdit, ClienteIn, ClienteOut, ClienteEnum
+from ..schemas.cliente import ClienteEdit, ClienteIn, ClienteOut, ClienteEnum, ClientePaginationOut
 from ..utils.validacao import valida_e_retorna_cpf
 
 cliente_router = APIRouter(
     prefix="/cliente",
     tags=["Cliente"],
 )
-
 
 @cliente_router.post(
     "/",
@@ -51,7 +50,7 @@ def cria_cliente(cliente: ClienteIn, db: conexao_bd):
 @cliente_router.get(
     "/",
     summary="Pega todos os clientes (com filtros opcionais)",
-    response_model=list[ClienteOut],
+    response_model=ClientePaginationOut,
 )
 def listar_clientes(
     db: conexao_bd,
@@ -104,16 +103,16 @@ def listar_clientes(
 
     clientes = db.scalars(query).all()
 
-    # Aplicar paginação
     offset = (page - 1) * page_size
     clientes = db.scalars(query.offset(offset).limit(page_size)).all()
+    clientes_out = [ClienteOut.model_validate(c) for c in clientes]
 
     return {
         "total": len(clientes),
         "page": page,
         "page_size": page_size,
         "pages": ceil(len(clientes) / page_size) if clientes else 0,
-        "items": clientes,
+        "items": clientes_out,
     }
 
 
