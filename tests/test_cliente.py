@@ -90,8 +90,8 @@ class ClienteTestCase(unittest.TestCase):
         response = self.client.get("/cliente/")
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertIsInstance(data, list)
-        cpfs = [cliente["cpf"] for cliente in data]
+        self.assertIsInstance(data, dict)
+        cpfs = [cliente["cpf"] for cliente in data["items"]]
         self.assertIn(payload["cpf"], cpfs)
 
     def test_remove_cliente(self):
@@ -371,12 +371,103 @@ class ClienteTestCase(unittest.TestCase):
         ]
         for c in clientes:
             self.client.post("/cliente/", json=c)
-        response = self.client.get("/cliente/?nome=Ali")
+
+        response = self.client.get("/cliente/?nome=Ali&page=1&page_size=10")
         self.assertEqual(response.status_code, 200)
-        nomes = [c["nome"] for c in response.json()]
+
+        data = response.json()
+        nomes = [c["nome"] for c in data["items"]]
+
         self.assertIn("Alice", nomes)
         self.assertIn("Alicia", nomes)
         self.assertNotIn("Bob", nomes)
+
+        self.assertEqual(data["page"], 1)
+        self.assertEqual(data["page_size"], 10)
+
+    def test_filtrar_por_nome_page_test(self):
+        clientes = [
+            {
+                "cpf": "39410861977",
+                "nome": "Alice",
+                "matricula": "MAT001",
+                "tipo": "aluno",
+                "graduando": True,
+                "pos_graduando": False,
+                "bolsista": True,
+            },
+            {
+                "cpf": "88451210031",
+                "nome": "Bob",
+                "matricula": "MAT002",
+                "tipo": "tecnico",
+                "graduando": False,
+                "pos_graduando": False,
+                "bolsista": False,
+            },
+            {
+                "cpf": "36452746006",
+                "nome": "Alicia",
+                "matricula": "MAT003",
+                "tipo": "professor",
+                "graduando": False,
+                "pos_graduando": True,
+                "bolsista": True,
+            },
+        ]
+        for c in clientes:
+            self.client.post("/cliente/", json=c)
+
+        response = self.client.get("/cliente/?nome=Ali&page=2&page_size=1")
+        self.assertEqual(response.status_code, 200)
+
+        data = response.json()
+
+        self.assertEqual(data["items"][0]["nome"], "Alicia")
+
+        self.assertEqual(data["page"], 2)
+        self.assertEqual(data["page_size"], 1)
+
+    def test_filtrar_por_nome_page_invalida(self):
+        clientes = [
+            {
+                "cpf": "39410861977",
+                "nome": "Alice",
+                "matricula": "MAT001",
+                "tipo": "aluno",
+                "graduando": True,
+                "pos_graduando": False,
+                "bolsista": True,
+            },
+            {
+                "cpf": "88451210031",
+                "nome": "Bob",
+                "matricula": "MAT002",
+                "tipo": "tecnico",
+                "graduando": False,
+                "pos_graduando": False,
+                "bolsista": False,
+            },
+            {
+                "cpf": "36452746006",
+                "nome": "Alicia",
+                "matricula": "MAT003",
+                "tipo": "professor",
+                "graduando": False,
+                "pos_graduando": True,
+                "bolsista": True,
+            },
+        ]
+        for c in clientes:
+            self.client.post("/cliente/", json=c)
+
+        response = self.client.get("/cliente/?nome=Ali&page=100&page_size=1")
+        self.assertEqual(response.status_code, 200)
+
+        data = response.json()
+
+        self.assertEqual(data["items"], [])
+
 
     def test_filtrar_por_tipo(self):
         self.client.post(
@@ -391,10 +482,10 @@ class ClienteTestCase(unittest.TestCase):
                 "bolsista": False,
             },
         )
-        response = self.client.get("/cliente/?tipo=tecnico")
+        response = self.client.get("/cliente/?tipo=tecnico&page=1&page_size=10")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.json()), 1)
-        self.assertEqual(response.json()[0]["nome"], "Bob")
+        self.assertEqual(len(response.json()["items"]), 1)
+        self.assertEqual(response.json()["items"][0]["nome"], "Bob")
 
     def test_filtrar_por_matricula(self):
         self.client.post(
@@ -409,10 +500,10 @@ class ClienteTestCase(unittest.TestCase):
                 "bolsista": True,
             },
         )
-        response = self.client.get("/cliente/?matricula=MAT003")
+        response = self.client.get("/cliente/?matricula=MAT003&page=1&page_size=10")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.json()), 1)
-        self.assertEqual(response.json()[0]["nome"], "Alicia")
+        self.assertEqual(len(response.json()["items"]), 1)
+        self.assertEqual(response.json()["items"][0]["nome"], "Alicia")
 
     def test_filtrar_combinado(self):
         self.client.post(
@@ -427,19 +518,18 @@ class ClienteTestCase(unittest.TestCase):
                 "bolsista": True,
             },
         )
-        response = self.client.get("/cliente/?nome=Ali&tipo=aluno")
+        response = self.client.get("/cliente/?nome=Ali&tipo=aluno&page=1&page_size=10")
         self.assertEqual(response.status_code, 200)
         resultados = response.json()
-        self.assertEqual(len(resultados), 1)
-        self.assertEqual(resultados[0]["nome"], "Alice")
+        self.assertEqual(len(resultados["items"]), 1)
+        self.assertEqual(resultados["items"][0]["nome"], "Alice")
 
     def test_filtrar_sem_resultado(self):
-        response = self.client.get("/cliente/?nome=Zé&tipo=aluno")
+        response = self.client.get("/cliente/?nome=Zé&tipo=aluno&page=1&page_size=10")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.json()), 0)
+        self.assertEqual(len(response.json()["items"]), 0)
 
     def test_listar_clientes_com_multiplos_filtros(self):
-        # cria clientes de exemplo
         clientes = [
             {
                 "cpf": "39410861977",
@@ -473,14 +563,13 @@ class ClienteTestCase(unittest.TestCase):
         for c in clientes:
             self.client.post("/cliente/", json=c)
 
-        # filtro por tipo=aluno e graduando=True e bolsista=True
         response = self.client.get(
-            "/cliente/", params={"tipo": "aluno", "graduando": True, "bolsista": True}
+            "/cliente/", params={"tipo": "aluno", "graduando": True, "bolsista": True, "page": 1, "page_size": 10}
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertEqual(len(data), 1)
-        self.assertIn("Alice", data[0]["nome"])
+        self.assertEqual(len(data["items"]), 1)
+        self.assertIn("Alice", data["items"][0]["nome"])
 
 
 if __name__ == "__main__":

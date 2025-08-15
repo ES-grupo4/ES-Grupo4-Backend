@@ -10,6 +10,7 @@ class ClienteEnum(str, Enum):
     aluno = "aluno"
 
 
+
 class ClienteIn(BaseModel):
     cpf: Annotated[
         str, StringConstraints(strip_whitespace=True, min_length=11, max_length=14)
@@ -50,6 +51,7 @@ class ClienteOut(BaseModel):
     bolsista: bool
 
     model_config = ConfigDict(
+        from_attributes=True,
         json_schema_extra={
             "example": {
                 "id": 1,
@@ -64,6 +66,13 @@ class ClienteOut(BaseModel):
             }
         }
     )
+
+class ClientePaginationOut(BaseModel):
+    total: int
+    page: int
+    page_size: int
+    pages: int
+    items: list[ClienteOut]
 
 
 class ClienteEdit(BaseModel):
