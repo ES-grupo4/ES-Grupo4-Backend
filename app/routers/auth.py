@@ -1,6 +1,6 @@
 from fastapi import Depends, APIRouter, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import JWTError, jwt # type: ignore
+from jose import JWTError, jwt  # type: ignore
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import select
 from ..models.models import Funcionario
@@ -64,7 +64,7 @@ async def login(login_data: LoginDTO, db: conexao_bd):
     usuario = get_usuario_por_cpf(db, login_data.cpf)
     if usuario and login_data.senha == usuario.senha:
         token = cria_token_de_acesso(
-            {"sub": usuario.cpf, "tipo": usuario.tipo},
+            {"sub": usuario.cpf, "tipo": usuario.tipo.value},
             timedelta(minutes=TOKEN_EXPIRA_EM_MINUTOS),
         )
         return {"token": token}

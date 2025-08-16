@@ -1,16 +1,26 @@
 from datetime import datetime, time, date
-from sqlalchemy import (
-    ForeignKey,
-    String,
-    DateTime,
-    JSON,
-    Time,
-    Date,
-    Boolean,
-    Integer,
-    CHAR,
-)
+from sqlalchemy import ForeignKey, String, DateTime, JSON, Date, CHAR, Enum
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from enum import Enum as PyEnum
+
+
+class ClienteTipo(PyEnum):
+    externo = "externo"
+    professor = "professor"
+    aluno = "aluno"
+    tecnico = "tecnico"
+
+
+class FuncionarioTipo(PyEnum):
+    admin = "admin"
+    funcionario = "funcionario"
+
+
+class FormaPagamentoCompra(PyEnum):
+    credito = "credito"
+    pix = "pix"
+    debito = "debito"
+    dinheiro = "dinheiro"
 
 
 class Base(DeclarativeBase):
@@ -27,7 +37,6 @@ class Usuario(Base):
 
     __mapper_args__ = {
         "polymorphic_on": subtipo,
-        "polymorphic_abstract": True,
     }
 
     def __repr__(self) -> str:
@@ -38,7 +47,14 @@ class Funcionario(Usuario):
     __tablename__ = "funcionario"
 
     usuario_id: Mapped[int] = mapped_column(ForeignKey(Usuario.id), primary_key=True)
-    tipo: Mapped[str] = mapped_column(String(50))
+    tipo: Mapped[FuncionarioTipo] = mapped_column(
+        Enum(
+            FuncionarioTipo,
+            name="funcionario_tipo_enum",
+            create_type=True,
+            native_enum=True,
+        )
+    )
     senha: Mapped[str] = mapped_column(String(50))
     email: Mapped[str | None] = mapped_column(String(320), nullable=True)
     data_entrada: Mapped[date] = mapped_column(Date)
@@ -54,7 +70,9 @@ class Cliente(Usuario):
 
     usuario_id: Mapped[int] = mapped_column(ForeignKey(Usuario.id), primary_key=True)
     matricula: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    tipo: Mapped[str] = mapped_column(String(50))
+    tipo: Mapped[ClienteTipo] = mapped_column(
+        Enum(ClienteTipo, name="cliente_tipo_enum", create_type=True, native_enum=True)
+    )
     graduando: Mapped[bool]
     pos_graduando: Mapped[bool]
     bolsista: Mapped[bool]
@@ -94,5 +112,12 @@ class Compra(Base):
 
     usuario_id: Mapped[int] = mapped_column(ForeignKey(Usuario.id), primary_key=True)
     local: Mapped[str]
-    forma_pagamento: Mapped[str] = mapped_column(String(50))
+    forma_pagamento: Mapped[FormaPagamentoCompra] = mapped_column(
+        Enum(
+            FormaPagamentoCompra,
+            name="forma_pagamento_enum",
+            create_type=True,
+            native_enum=True,
+        )
+    )
     horario: Mapped[datetime] = mapped_column(DateTime, primary_key=True)
