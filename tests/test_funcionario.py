@@ -326,7 +326,7 @@ class FuncionarioTestCase(unittest.TestCase):
         self.assertIn("detail", erro)
         self.assertTrue(
             any(
-                d.get("ctx", {}).get("expected") == "'funcionario' or 'ADMIN'"
+                d.get("ctx", {}).get("expected") == "'funcionario' or 'admin'"
                 for d in erro["detail"]
             ),
             "O erro não é de tipo inválido",
@@ -458,7 +458,7 @@ class FuncionarioTestCase(unittest.TestCase):
         self.assertIn("detail", erro)
         self.assertTrue(
             any(
-                d.get("ctx", {}).get("expected") == "'funcionario' or 'ADMIN'"
+                d.get("ctx", {}).get("expected") == "'funcionario' or 'admin'"
                 for d in erro["detail"]
             ),
             "O erro não é de tipo inválido",
