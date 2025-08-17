@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, status
 
 from ..models.models import Funcionario
 from ..models.db_setup import conexao_bd
@@ -27,10 +27,10 @@ def valida_funcionario(funcionario: FuncionarioIn, db: conexao_bd):
     funcionario.cpf = valida_e_retorna_cpf(funcionario.cpf)
 
     if funcionario.cpf in db.scalars(select(Funcionario.cpf)):
-        raise HTTPException(status_code=409, detail="CPF já cadastrado no sistema")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="CPF já cadastrado no sistema")
 
     if funcionario.email in db.scalars(select(Funcionario.email)):
-        raise HTTPException(status_code=409, detail="Email já cadastrado no sistema")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email já cadastrado no sistema")
 
     return funcionario
 
@@ -68,7 +68,7 @@ def atualiza_funcionario(id: int, funcionario: FuncionarioEdit, db: conexao_bd):
     funcionarioExistente = db.scalar(select(Funcionario).where(Funcionario.id == id))
 
     if not funcionarioExistente:
-        raise HTTPException(status_code=404, detail="Funcionário não encontrado")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Funcionário não encontrado")
 
     for campo, valor in funcionario.model_dump(exclude_unset=True).items():
         setattr(funcionarioExistente, campo, valor)
@@ -139,7 +139,7 @@ def deleta_funcionario(db: conexao_bd, cpf: str):
     cpf = valida_e_retorna_cpf(cpf)
     funcionario = db.scalar(select(Funcionario).where(Funcionario.cpf == cpf))
     if not funcionario:
-        raise HTTPException(status_code=404, detail="Funcionário não encontrado")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Funcionário não encontrado")
 
     db.delete(funcionario)
     db.commit()
@@ -157,10 +157,10 @@ def desativa_funcionario(db: conexao_bd, cpf: str, data_saida: date):
 
     funcionario = db.scalar(select(Funcionario).where(Funcionario.cpf == cpf))
     if not funcionario:
-        raise HTTPException(status_code=404, detail="Funcionário não encontrado")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Funcionário não encontrado")
 
     if funcionario.data_saida is not None:
-        raise HTTPException(status_code=400, detail="Funcionário já foi desativado")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Funcionário já foi desativado")
 
     funcionario.email = None
     funcionario.data_saida = data_saida
