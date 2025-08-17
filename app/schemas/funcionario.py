@@ -32,12 +32,12 @@ class FuncionarioIn(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "cpf": "19896507406",
-                "nome": "John Doe",
+                "cpf": "79920205451",
+                "nome": "John Dois",
                 "senha": "John123!",
-                "email": "john@doe.com",
-                "tipo": "admin",
-                "data_entrada": "2024-05-08",
+                "email": "john@dois.com",
+                "tipo": "funcionario",
+                "data_entrada": f"{date.today()}",
             }
         }
     )
@@ -54,9 +54,9 @@ class FuncionarioEdit(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "nome": "John Dois",
+                "nome": "John Tres",
                 "senha": "John123!",
-                "email": "john@doe.com",
+                "email": "john@tres.com",
                 "tipo": "admin",
                 "data_entrada": "2025-08-07",
                 "data_saida": None,
