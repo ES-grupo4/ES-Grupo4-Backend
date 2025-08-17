@@ -8,8 +8,9 @@ from ..schemas.funcionario import (
     FuncionarioIn,
     tipoFuncionarioEnum,
 )
-from ..utils.permissoes import requer_permissao
+from ..core.permissoes import requer_permissao
 from ..utils.validacao import valida_e_retorna_cpf
+from ..core.seguranca import gerar_hash
 from pydantic import EmailStr
 from datetime import date
 
@@ -46,7 +47,7 @@ def cadastra_funcionario(funcionario: FuncionarioIn, db: conexao_bd):
     usuario = Funcionario(
         cpf=funcionario.cpf,
         nome=funcionario.nome,
-        senha=funcionario.senha,
+        senha=gerar_hash(funcionario.senha),
         email=funcionario.email,
         tipo=funcionario.tipo.lower(),
         data_entrada=date.today(),

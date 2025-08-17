@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+
+from app.core.seguranca import gerar_hash
 from .routers.funcionario import funcionarios_router
 from .routers.auth import auth_router
 from .routers.compra import compra_router
@@ -17,10 +19,11 @@ from datetime import date
 @asynccontextmanager
 async def setUpAdmin(app: FastAPI):
     db = Session(engine)
+    senha = gerar_hash("John123!")
     admin_data = {
         "cpf": "19896507406",
         "nome": "John Doe",
-        "senha": "John123!",
+        "senha": f"{senha}",
         "email": "john@doe.com",
         "tipo": "admin",
         "data_entrada": date(2025, 8, 4),
@@ -38,8 +41,8 @@ async def setUpAdmin(app: FastAPI):
 app = FastAPI(lifespan=setUpAdmin)
 
 # =====================================
-# Liberando acesso da api 
-origins = ['*']
+# Liberando acesso da api
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
