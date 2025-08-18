@@ -6,6 +6,7 @@ import polars as pl
 from ..models.db_setup import conexao_bd
 from ..models.models import Cliente
 from ..schemas.cliente import ClienteEdit, ClienteIn, ClienteOut, ClienteEnum
+from ..core.seguranca import hash_cpf, criptografa_cpf
 from ..utils.validacao import valida_e_retorna_cpf
 
 cliente_router = APIRouter(
@@ -26,7 +27,8 @@ def cria_cliente(cliente: ClienteIn, db: conexao_bd):
     """
     cliente.cpf = valida_e_retorna_cpf(cliente.cpf)
     novo = Cliente(
-        cpf=cliente.cpf,
+        cpf_cript=criptografa_cpf(cliente.cpf),
+        cpf_hash=hash_cpf(cliente.cpf),
         nome=cliente.nome,
         matricula=cliente.matricula,
         tipo=cliente.tipo,
@@ -44,7 +46,7 @@ def cria_cliente(cliente: ClienteIn, db: conexao_bd):
             detail="Cliente com esse CPF já existe.",
         )
     db.refresh(novo)
-    return novo
+    return ClienteOut.from_orm(novo)
 
 
 @cliente_router.get(
@@ -98,7 +100,7 @@ def listar_clientes(
         query = query.where(Cliente.bolsista == bolsista)
 
     clientes = db.scalars(query).all()
-    return clientes
+    return [ClienteOut.from_orm(cliente) for cliente in clientes]
 
 
 @cliente_router.delete(
@@ -111,7 +113,7 @@ def remover_cliente(cpf: str, db: conexao_bd):
     Remove um cliente do sistema a partir do CPF.
     """
     cpf = valida_e_retorna_cpf(cpf)
-    cliente = db.scalar(select(Cliente).where(Cliente.cpf == cpf))
+    cliente = db.scalar(select(Cliente).where(Cliente.cpf_hash == hash_cpf(cpf)))
     if not cliente:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -131,7 +133,7 @@ def editar_cliente(cpf: str, dados: ClienteEdit, db: conexao_bd):
     Edita os dados de um cliente existente, exceto CPF, ID e tipo.
     """
     cpf = valida_e_retorna_cpf(cpf)
-    cliente = db.scalar(select(Cliente).where(Cliente.cpf == cpf))
+    cliente = db.scalar(select(Cliente).where(Cliente.cpf_hash == hash_cpf(cpf)))
     if not cliente:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -141,7 +143,7 @@ def editar_cliente(cpf: str, dados: ClienteEdit, db: conexao_bd):
         setattr(cliente, campo, valor)
     db.commit()
     db.refresh(cliente)
-    return cliente
+    return ClienteOut.from_orm(cliente)
 
 
 @cliente_router.get(
@@ -154,13 +156,13 @@ def buscar_cliente(cpf: str, db: conexao_bd):
     Retorna os dados de um cliente a partir do CPF.
     """
     cpf = valida_e_retorna_cpf(cpf)
-    cliente = db.scalar(select(Cliente).where(Cliente.cpf == cpf))
+    cliente = db.scalar(select(Cliente).where(Cliente.cpf_hash == hash_cpf(cpf)))
     if not cliente:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Cliente não encontrado",
         )
-    return cliente
+    return ClienteOut.from_orm(cliente)
 
 
 @cliente_router.post(
@@ -205,7 +207,8 @@ async def upload_clientes_csv(db: conexao_bd, arquivo: UploadFile = File(...)):
     for linha in tabela_csv.iter_rows(named=True):
         try:
             cliente = Cliente(
-                cpf=str(linha["cpf"]),
+                cpf_hash=hash_cpf(str(linha["cpf"])),
+                cpf_cript=criptografa_cpf(str(linha["cpf"])),
                 nome=str(linha["nome"]),
                 matricula=str(linha["matricula"]),
                 tipo=str(linha["tipo"]),
