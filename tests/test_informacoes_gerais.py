@@ -1,8 +1,10 @@
 import unittest
+from datetime import date
 from fastapi.testclient import TestClient
 from app.main import app
-from app.models.models import InformacoesGerais
+from app.models.models import InformacoesGerais, Funcionario
 from app.models.db_setup import engine
+from app.core.seguranca import hash_cpf, gerar_hash, criptografa_cpf, descriptografa_cpf
 from datetime import time
 
 from sqlalchemy.orm import Session
@@ -37,6 +39,39 @@ class TestInformacoesGerais(unittest.TestCase):
         self.db.commit()
         self.db.refresh(info)
 
+        # Mockando um admin pra ter permissão nas rotas
+        self.admin_data = {
+            "cpf_hash": hash_cpf("19896507406"),
+            "cpf_cript": criptografa_cpf("19896507406"),
+            "nome": "John Doe",
+            "senha": gerar_hash("John123!"),
+            "email": "john@doe.com",
+            "tipo": "admin",
+            "data_entrada": date(2025, 8, 4),
+        }
+
+        admin_existente = (
+            self.db.query(Funcionario)
+            .filter_by(cpf_hash=self.admin_data["cpf_hash"])
+            .first()
+        )
+        if not admin_existente:
+            admin = Funcionario(**self.admin_data)
+            self.db.add(admin)
+            self.db.commit()
+
+        login_payload = {
+            "cpf": descriptografa_cpf(self.admin_data["cpf_cript"]),
+            "senha": "John123!",
+        }
+        login_response = client.post("/auth/login", json=login_payload)
+        assert login_response.status_code == 200, "Falha no login do admin"
+
+        token = login_response.json().get("token")
+        assert token, "Token não retornado no login"
+
+        self.auth_headers = {"Authorization": f"Bearer {token}"}
+
     def test_update_informacoes_gerais(self):
         payload = {
             "nome_empresa": "Empresa Atualizada",
@@ -49,7 +84,9 @@ class TestInformacoesGerais(unittest.TestCase):
             "inicio_jantar": "17:00:00",
             "fim_jantar": "20:00:00",
         }
-        response = self.client.put("/informacoes-gerais/", json=payload)
+        response = self.client.put(
+            "/informacoes-gerais/", json=payload, headers=self.auth_headers
+        )
         assert response.status_code == 200
         data = response.json()
         assert data["nome_empresa"] == "Empresa Atualizada"
@@ -74,7 +111,7 @@ class TestInformacoesGerais(unittest.TestCase):
         self.db.query(InformacoesGerais).delete()
         self.db.commit()
         self.tearDown()
-        response = self.client.get("/informacoes-gerais/")
+        response = self.client.get("/informacoes-gerais/", headers=self.auth_headers)
         assert response.status_code == 404
         assert response.json() == {"detail": "Informações gerais não encontradas."}
 
@@ -92,6 +129,6 @@ class TestInformacoesGerais(unittest.TestCase):
             "inicio_jantar": "17:00:00",
             "fim_jantar": "20:00:00",
         }
-        response = self.client.put("/informacoes-gerais/", json=payload)
+        response = self.client.put("/informacoes-gerais/", json=payload, headers=self.auth_headers)
         assert response.status_code == 404
         assert response.json() == {"detail": "404: Informações gerais não encontradas."}
