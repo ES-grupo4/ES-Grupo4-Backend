@@ -3,9 +3,12 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt  # type: ignore
 from datetime import datetime, timezone, timedelta
 from passlib.context import CryptContext  # type: ignore
+from cryptography.fernet import Fernet
+import hashlib
 
 pwd_context = CryptContext(schemes=["bcrypt"])
 security = HTTPBearer()
+fernet = Fernet("7kT3Kk1-CFNKWgW6tp22bxlSo0qGwc8ZRjWiOUPR2JU=")
 
 
 # Sessão de gerar hash de senhas - Início
@@ -67,3 +70,20 @@ async def get_usuario_atual(
 
 
 # Sessão de geração e confirmação de token - Fim
+
+# Sessão de criptografia de CPF - Início
+
+
+def criptografa_cpf(cpf: str):
+    return fernet.encrypt(cpf.encode())
+
+
+def descriptografa_cpf(cpf_criptografado: bytes):
+    return fernet.decrypt(cpf_criptografado).decode()
+
+
+def hash_cpf(cpf: str):
+    return hashlib.sha256(cpf.encode()).hexdigest()
+
+
+# Sessão de criptografia de CPF - Fim
