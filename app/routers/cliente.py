@@ -1,12 +1,19 @@
 import io
+from math import ceil
 from fastapi import APIRouter, File, HTTPException, UploadFile, status, Query
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 import polars as pl
 from ..models.db_setup import conexao_bd
 from ..models.models import Cliente
-from ..schemas.cliente import ClienteEdit, ClienteIn, ClienteOut, ClienteEnum
 from ..core.seguranca import hash_cpf, criptografa_cpf
+from ..schemas.cliente import (
+    ClienteEdit,
+    ClienteIn,
+    ClienteOut,
+    ClienteEnum,
+    ClientePaginationOut,
+)
 from ..utils.validacao import valida_e_retorna_cpf
 
 cliente_router = APIRouter(
@@ -52,7 +59,7 @@ def cria_cliente(cliente: ClienteIn, db: conexao_bd):
 @cliente_router.get(
     "/",
     summary="Pega todos os clientes (com filtros opcionais)",
-    response_model=list[ClienteOut],
+    response_model=ClientePaginationOut,
 )
 def listar_clientes(
     db: conexao_bd,
@@ -71,6 +78,10 @@ def listar_clientes(
     ),
     bolsista: bool | None = Query(
         default=None, description="Filtrar por quem é bolsista"
+    ),
+    page: int = Query(1, ge=1, description="Número da página (padrão 1)"),
+    page_size: int = Query(
+        10, ge=1, le=100, description="Quantidade de clientes por página (padrão 10)"
     ),
 ):
     """
@@ -99,8 +110,22 @@ def listar_clientes(
     if bolsista is not None:
         query = query.where(Cliente.bolsista == bolsista)
 
-    clientes = db.scalars(query).all()
-    return [ClienteOut.from_orm(cliente) for cliente in clientes]
+    offset = (page - 1) * page_size
+    total = db.scalar(select(func.count()).select_from(query.subquery()))
+    clientes_na_pagina = db.scalars(query.offset(offset).limit(page_size)).all()
+    clientes_out = [ClienteOut.from_orm(cliente) for cliente in clientes_na_pagina]
+
+    return {
+        "total_in_page": len(clientes_na_pagina),
+        "page": page,
+        "page_size": page_size,
+        "total_pages": ceil(total / page_size) if total else 0,
+        "items": clientes_out,
+    }
+
+
+# clientes = db.scalars(query).all()
+# return [ClienteOut.from_orm(cliente) for cliente in clientes]
 
 
 @cliente_router.delete(
