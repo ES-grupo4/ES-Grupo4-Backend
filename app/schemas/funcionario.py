@@ -1,7 +1,8 @@
 from enum import Enum
-from pydantic import BaseModel, ConfigDict, EmailStr, StringConstraints
+from pydantic import BaseModel, ConfigDict, EmailStr, StringConstraints, Field
 from datetime import date
 from typing import Annotated
+from ..core.seguranca import fernet
 
 
 class tipoFuncionarioEnum(str, Enum):
@@ -12,11 +13,17 @@ class tipoFuncionarioEnum(str, Enum):
 class FuncionarioOut(BaseModel):
     id: int
     nome: str
-    cpf: str
+    cpf: str = Field(..., description="CPF descriptografado")
     email: EmailStr | None
     tipo: tipoFuncionarioEnum
     data_entrada: date
     data_saida: date | None
+
+    @classmethod
+    def from_orm(cls, obj):
+        data = obj.__dict__.copy()
+        data["cpf"] = obj.get_cpf(fernet)
+        return cls(**data)
 
 
 class FuncionarioIn(BaseModel):
