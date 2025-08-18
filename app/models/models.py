@@ -1,7 +1,8 @@
 from datetime import datetime, time, date
-from sqlalchemy import ForeignKey, String, DateTime, JSON, Date, CHAR, Enum
+from sqlalchemy import ForeignKey, String, DateTime, JSON, Date, LargeBinary, Enum
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from enum import Enum as PyEnum
+from ..core.seguranca import fernet
 
 
 class ClienteTipo(PyEnum):
@@ -30,7 +31,8 @@ class Base(DeclarativeBase):
 class Usuario(Base):
     __tablename__ = "usuario"
 
-    cpf: Mapped[str | None] = mapped_column(CHAR(11), unique=True, nullable=True)
+    cpf_hash: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
+    cpf_cript: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
     nome: Mapped[str | None] = mapped_column(String(100), nullable=True)
     id: Mapped[int] = mapped_column(primary_key=True)
     subtipo: Mapped[str] = mapped_column(String())
@@ -40,7 +42,12 @@ class Usuario(Base):
     }
 
     def __repr__(self) -> str:
-        return f"Usuario: {self.id=} {self.cpf=} {self.nome=} {self.subtipo}"
+        return f"Usuario: {self.id=} {self.nome=} {self.subtipo}"
+    
+    def get_cpf(self, fernet):
+        if not self.cpf_cript:
+            return None
+        return fernet.decrypt(self.cpf_cript).decode()
 
 
 class Funcionario(Usuario):
@@ -63,6 +70,12 @@ class Funcionario(Usuario):
     __mapper_args__ = {
         "polymorphic_identity": "funcionario",
     }
+
+    @property
+    def cpf(self):
+        if not self.cpf_cript:
+            return None
+        return fernet.decrypt(self.cpf_cript).decode()
 
 
 class Cliente(Usuario):
