@@ -372,18 +372,18 @@ class ClienteTestCase(unittest.TestCase):
         for c in clientes:
             self.client.post("/cliente/", json=c)
 
-        response = self.client.get("/cliente/?nome=Ali&page=1&page_size=10")
+        response = self.client.get("/cliente/?nome=Ali&page=1&page_size=1")
         self.assertEqual(response.status_code, 200)
 
         data = response.json()
         nomes = [c["nome"] for c in data["items"]]
 
         self.assertIn("Alice", nomes)
-        self.assertIn("Alicia", nomes)
         self.assertNotIn("Bob", nomes)
+        self.assertEqual(data["total_pages"], 2)
 
         self.assertEqual(data["page"], 1)
-        self.assertEqual(data["page_size"], 10)
+        self.assertEqual(data["page_size"], 1)
 
     def test_filtrar_por_nome_page_test(self):
         clientes = [
@@ -424,7 +424,7 @@ class ClienteTestCase(unittest.TestCase):
         data = response.json()
 
         self.assertEqual(data["items"][0]["nome"], "Alicia")
-
+        self.assertEqual(data["total_pages"], 2)
         self.assertEqual(data["page"], 2)
         self.assertEqual(data["page_size"], 1)
 

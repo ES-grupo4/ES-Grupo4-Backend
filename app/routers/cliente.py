@@ -1,7 +1,7 @@
 import io
 from math import ceil
 from fastapi import APIRouter, File, HTTPException, UploadFile, status, Query
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 import polars as pl
 from ..models.db_setup import conexao_bd
@@ -100,18 +100,17 @@ def listar_clientes(
         query = query.where(Cliente.pos_graduando == pos_graduando)
     if bolsista is not None:
         query = query.where(Cliente.bolsista == bolsista)
-
-    clientes = db.scalars(query).all()
-
+    
     offset = (page - 1) * page_size
-    clientes = db.scalars(query.offset(offset).limit(page_size)).all()
-    clientes_out = [ClienteOut.model_validate(c) for c in clientes]
+    total = db.scalar(select(func.count()).select_from(query.subquery()))
+    clientes_na_pagina = db.scalars(query.offset(offset).limit(page_size)).all()
+    clientes_out = [ClienteOut.model_validate(c) for c in clientes_na_pagina]
 
     return {
-        "total": len(clientes),
+        "total_in_page": len(clientes_na_pagina),
         "page": page,
         "page_size": page_size,
-        "pages": ceil(len(clientes) / page_size) if clientes else 0,
+        "total_pages": ceil(total / page_size) if total else 0,
         "items": clientes_out,
     }
 

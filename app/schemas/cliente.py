@@ -68,10 +68,10 @@ class ClienteOut(BaseModel):
     )
 
 class ClientePaginationOut(BaseModel):
-    total: int
+    total_in_page: int
     page: int
     page_size: int
-    pages: int
+    total_pages: int
     items: list[ClienteOut]
 
 
