@@ -13,5 +13,5 @@ dependencies = [
     "passlib[bcrypt]"
 ]
 
-[mypy-passlib.*]
+["mypy-passlib.*"]
 ignore_missing_imports = true
