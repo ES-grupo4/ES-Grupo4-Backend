@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.main import app
 from app.models.models import Cliente
 from app.models.db_setup import engine
+from app.core.seguranca import hash_cpf
 import polars as pl
 
 client = TestClient(app)
@@ -23,7 +24,7 @@ class ClienteTestCase(unittest.TestCase):
             "33333abc33a",
         ]
         for cpf in cpfs_testados:
-            cliente = self.db.query(Cliente).filter_by(cpf=cpf).first()
+            cliente = self.db.query(Cliente).filter_by(cpf_hash=hash_cpf(cpf)).first()
             if cliente:
                 self.db.delete(cliente)
         self.db.commit()
@@ -38,7 +39,7 @@ class ClienteTestCase(unittest.TestCase):
             "33333abc33a",
         ]
         for cpf in cpfs_testados:
-            cliente = self.db.query(Cliente).filter_by(cpf=cpf).first()
+            cliente = self.db.query(Cliente).filter_by(cpf_hash=hash_cpf(cpf)).first()
             if cliente:
                 self.db.delete(cliente)
         self.db.commit()
@@ -289,7 +290,7 @@ class ClienteTestCase(unittest.TestCase):
         ]
         rows = [
             {
-                "cpf": "12345678912",
+                "cpf": "55566677788",
                 "nome": "Cliente A",
                 "matricula": "20240210",
                 "tipo": "aluno",
@@ -309,7 +310,7 @@ class ClienteTestCase(unittest.TestCase):
         self.assertEqual(data["message"], "1 cliente(s) cadastrado(s) com sucesso.")
 
         # Verifica no banco
-        cliente = self.db.query(Cliente).filter_by(cpf="12345678912").first()
+        cliente = self.db.query(Cliente).filter_by(cpf_hash=hash_cpf("55566677788")).first()
         assert cliente is not None
         self.assertEqual(cliente.nome, "Cliente A")
 

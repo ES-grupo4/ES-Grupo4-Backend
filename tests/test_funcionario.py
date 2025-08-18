@@ -2,6 +2,7 @@ from datetime import date
 import unittest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
+from app.core.seguranca import criptografa_cpf, descriptografa_cpf, hash_cpf, gerar_hash
 from app.main import app
 from app.models.models import Funcionario
 from app.models.db_setup import engine
@@ -14,16 +15,17 @@ class FuncionarioTestCase(unittest.TestCase):
         self.db = Session(engine)
         # Mockando um admin pra ter permissão nas rotas
         self.admin_data = {
-            "cpf": "19896507406",
+            "cpf_hash": hash_cpf("19896507406"),
+            "cpf_cript": criptografa_cpf("19896507406"),
             "nome": "John Doe",
-            "senha": "John123!",
+            "senha": gerar_hash("John123!"),
             "email": "john@doe.com",
             "tipo": "admin",
             "data_entrada": date(2025, 8, 4),
         }
 
         admin_existente = (
-            self.db.query(Funcionario).filter_by(cpf=self.admin_data["cpf"]).first()
+            self.db.query(Funcionario).filter_by(cpf_hash=self.admin_data["cpf_hash"]).first()
         )
         if not admin_existente:
             admin = Funcionario(**self.admin_data)
@@ -31,8 +33,8 @@ class FuncionarioTestCase(unittest.TestCase):
             self.db.commit()
 
         login_payload = {
-            "cpf": self.admin_data["cpf"],
-            "senha": self.admin_data["senha"],
+            "cpf": descriptografa_cpf(self.admin_data["cpf_cript"]),
+            "senha": "John123!",
         }
         login_response = client.post("/auth/login", json=login_payload)
         assert login_response.status_code == 200, "Falha no login do admin"
@@ -54,7 +56,7 @@ class FuncionarioTestCase(unittest.TestCase):
 
     def tearDown(self):
         for cpf in ["19896507406", "79920205451", "89159073454"]:
-            funcionario = self.db.query(Funcionario).filter_by(cpf=cpf).first()
+            funcionario = self.db.query(Funcionario).filter_by(cpf_hash=hash_cpf(cpf)).first()
             if funcionario:
                 self.db.delete(funcionario)
                 self.db.commit()
