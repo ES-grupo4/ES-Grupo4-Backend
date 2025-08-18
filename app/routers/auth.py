@@ -3,7 +3,8 @@ from sqlalchemy import select
 from ..models.models import Funcionario
 from ..models.db_setup import conexao_bd
 from ..schemas.auth import LoginDTO
-from ..core.seguranca import verificar_hash, cria_token_de_acesso
+from ..core.seguranca import hash_cpf, verificar_hash, cria_token_de_acesso
+from ..utils.validacao import valida_e_retorna_cpf
 
 auth_router = APIRouter(
     prefix="/auth",
@@ -13,8 +14,8 @@ router = auth_router
 
 
 def get_usuario_por_cpf(db: conexao_bd, cpf: str):
-    cpf = cpf.replace(".", "").replace("-", "")
-    usuario = db.scalar(select(Funcionario).where(Funcionario.cpf == cpf))
+    cpf = valida_e_retorna_cpf(cpf)
+    usuario = db.scalar(select(Funcionario).where(Funcionario.cpf_hash == hash_cpf(cpf)))
     return usuario
 
 
