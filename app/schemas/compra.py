@@ -22,3 +22,10 @@ class CompraIn(BaseModel):
     horario: datetime
     local: str
     forma_pagamento: FormaPagamentoEnum
+
+
+class CompraPaginationOut(BaseModel):
+    total_in_page: int
+    page: int
+    total_pages: int
+    items: list[CompraOut]

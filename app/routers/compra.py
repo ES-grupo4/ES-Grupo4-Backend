@@ -1,11 +1,12 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Query, status
 import io
+from math import ceil
 import polars as pl
-from sqlalchemy import select
+from sqlalchemy import select, func
 from ..models.db_setup import conexao_bd
 from ..models.models import Compra
 from ..models.models import Cliente
-from ..schemas.compra import CompraIn, CompraOut
+from ..schemas.compra import CompraIn, CompraOut, CompraPaginationOut
 from datetime import datetime
 
 compra_router = APIRouter(prefix="/compra", tags=["Compra"])
@@ -78,7 +79,7 @@ async def cadastra_compra_csv(db: conexao_bd, arquivo: UploadFile = File(...)):
     "/",
     summary="Retorna compras a partir de um filtro",
     tags=["Compra"],
-    response_model=list[CompraOut],
+    response_model=CompraPaginationOut,
 )
 def filtra_compra(
     db: conexao_bd,
@@ -94,6 +95,10 @@ def filtra_compra(
     ),
     categoria_comprador: str | None = Query(
         default=None, description="Filtra por categoria do comprador"
+    ),
+    page: int = Query(1, ge=1, description="Número da página (padrão 1)"),
+    page_size: int = Query(
+        10, ge=1, le=100, description="Quantidade de compras por página (padrão 10)"
     ),
 ):
     query = (
@@ -113,12 +118,15 @@ def filtra_compra(
     if categoria_comprador is not None:
         query = query.where(Cliente.tipo.ilike(f"%{categoria_comprador}%"))
 
-    saida = db.scalars(query).all()
+    offset = (page - 1) * page_size
+    total = db.scalar(select(func.count()).select_from(query.subquery()))
+    compras_na_pagina = db.scalars(query.offset(offset).limit(page_size)).all()
+    compras_out = [CompraOut.model_validate(c) for c in compras_na_pagina]
 
-    if not saida:
-        raise HTTPException(
-            status_code=404,
-            detail="Nenhuma compra encontrada com os filtros fornecidos",
-        )
-
-    return saida
+    return {
+        "total_in_page": len(compras_na_pagina),
+        "page": page,
+        "page_size": page_size,
+        "total_pages": ceil(total / page_size) if total else 0,
+        "items": compras_out,
+    }
