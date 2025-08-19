@@ -44,6 +44,7 @@ def create_or_replace_info(
     summary="Pega as informações gerais",
     tags=["Informações Gerais"],
     response_model=InformacoesGeraisDTO,
+    dependencies=[requer_permissao("funcionario", "admin")],
 )
 def read_info(db: Session = Depends(get_bd)):
     info = get_informacoes_gerais(db)

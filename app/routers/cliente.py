@@ -7,6 +7,7 @@ import polars as pl
 from ..models.db_setup import conexao_bd
 from ..models.models import Cliente
 from ..core.seguranca import hash_cpf, criptografa_cpf
+from ..core.permissoes import requer_permissao
 from ..schemas.cliente import (
     ClienteEdit,
     ClienteIn,
@@ -19,6 +20,7 @@ from ..utils.validacao import valida_e_retorna_cpf
 cliente_router = APIRouter(
     prefix="/cliente",
     tags=["Cliente"],
+    dependencies=[requer_permissao("funcionario", "admin")],
 )
 
 

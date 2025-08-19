@@ -95,6 +95,7 @@ def atualiza_funcionario(id: int, funcionario: FuncionarioEdit, db: conexao_bd):
     summary="Retorna todos os funcionários cadastrados",
     tags=["Funcionário"],
     response_model=list[FuncionarioOut],
+    dependencies=[requer_permissao("funcionario", "admin")],
 )
 def busca_funcionarios(
     db: conexao_bd,
