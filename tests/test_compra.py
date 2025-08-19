@@ -2,10 +2,10 @@ import unittest
 import io
 import polars as pl
 from fastapi.testclient import TestClient
-from app.core.seguranca import criptografa_cpf, hash_cpf
+from app.core.seguranca import criptografa_cpf, hash_cpf, descriptografa_cpf, gerar_hash
+from datetime import date
 from app.main import app
-from app.models.models import Compra
-from app.models.models import Cliente
+from app.models.models import Compra, Funcionario, Cliente
 from app.models.db_setup import engine
 from sqlalchemy.orm import Session
 from datetime import datetime
@@ -60,9 +60,49 @@ class CompraTestCase(unittest.TestCase):
         self.db.query(Compra).delete()
         self.db.commit()
 
+        # Mockando um funcionario pra ter permissão nas rotas
+        self.funcionario_data = {
+            "cpf_hash": hash_cpf("19896507406"),
+            "cpf_cript": criptografa_cpf("19896507406"),
+            "nome": "John Doe",
+            "senha": gerar_hash("John123!"),
+            "email": "john@doe.com",
+            "tipo": "funcionario",
+            "data_entrada": date(2025, 8, 4),
+        }
+
+        funcionario_existente = (
+            self.db.query(Funcionario)
+            .filter_by(cpf_hash=self.funcionario_data["cpf_hash"])
+            .first()
+        )
+        if not funcionario_existente:
+            funcionario = Funcionario(**self.funcionario_data)
+            self.db.add(funcionario)
+            self.db.commit()
+
+        login_payload = {
+            "cpf": descriptografa_cpf(self.funcionario_data["cpf_cript"]),
+            "senha": "John123!",
+        }
+        login_response = client.post("/auth/login", json=login_payload)
+        assert login_response.status_code == 200, "Falha no login do funcionario"
+
+        token = login_response.json().get("token")
+        assert token, "Token não retornado no login"
+
+        self.auth_headers = {"Authorization": f"Bearer {token}"}
+
     def tearDown(self):
         self.db.query(Compra).delete()
-        self.db.commit()
+        funcionario = (
+            self.db.query(Funcionario)
+            .filter_by(cpf_hash=hash_cpf("19896507406"))
+            .first()
+        )
+        if funcionario:
+            self.db.delete(funcionario)
+            self.db.commit()
         self.db.close()
 
     def test_cadastra_sucesso(self):
@@ -72,7 +112,7 @@ class CompraTestCase(unittest.TestCase):
             "local": "ufcg",
             "forma_pagamento": "dinheiro",
         }
-        response = self.client.post("/compra/", json=payload)
+        response = self.client.post("/compra/", json=payload, headers=self.auth_headers)
         self.assertEqual(response.status_code, 201)
 
         info = response.json()
@@ -104,6 +144,7 @@ class CompraTestCase(unittest.TestCase):
         response = self.client.post(
             "/compra/csv",
             files={"arquivo": ("compras.csv", csv_bytes, "text/csv")},
+            headers=self.auth_headers,
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -117,6 +158,7 @@ class CompraTestCase(unittest.TestCase):
         response = self.client.post(
             "/compra/csv",
             files={"arquivo": ("compras.txt", csv_bytes, "text/plain")},
+            headers=self.auth_headers,
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn("O arquivo deveria ser CSV.", response.json()["detail"])
@@ -135,6 +177,7 @@ class CompraTestCase(unittest.TestCase):
         response = self.client.post(
             "/compra/csv",
             files={"arquivo": ("compras.csv", csv_bytes, "text/csv")},
+            headers=self.auth_headers,
         )
         self.assertEqual(response.status_code, 422)
         self.assertIn(
@@ -151,7 +194,7 @@ class CompraTestCase(unittest.TestCase):
         self.db.add(compra)
         self.db.commit()
 
-        response = client.get("/compra/")
+        response = client.get("/compra/", headers=self.auth_headers)
         self.assertEqual(response.status_code, 200)
         info = response.json()
         self.assertIsInstance(info, list)
@@ -162,7 +205,7 @@ class CompraTestCase(unittest.TestCase):
         self.db.query(Compra).delete()
         self.db.commit()
         self.tearDown()
-        response = self.client.get("/compra/")
+        response = self.client.get("/compra/", headers=self.auth_headers)
         self.assertEqual(response.status_code, 404)
         assert response.json() == {
             "detail": "Nenhuma compra encontrada com os filtros fornecidos"
@@ -185,16 +228,22 @@ class CompraTestCase(unittest.TestCase):
         ]
 
         for i in compras:
-            self.client.post("/compra/", json=i)
+            self.client.post("/compra/", json=i, headers=self.auth_headers)
 
-        response = self.client.get("/compra/", params={"forma_pagamento": "pix"})
+        response = self.client.get(
+            "/compra/", params={"forma_pagamento": "pix"}, headers=self.auth_headers
+        )
         self.assertEqual(response.status_code, 200)
         info = response.json()
         self.assertEqual(len(info), 1)
         self.assertEqual(info[0]["horario"], "2023-04-13T12:00:00")
 
     def test_filtra_compras_not_found(self):
-        response = self.client.get("/compra/", params={"forma_pagamento": "dinheiro"})
+        response = self.client.get(
+            "/compra/",
+            params={"forma_pagamento": "dinheiro"},
+            headers=self.auth_headers,
+        )
         self.assertEqual(response.status_code, 404)
         assert response.json() == {
             "detail": "Nenhuma compra encontrada com os filtros fornecidos"
@@ -204,7 +253,7 @@ class CompraTestCase(unittest.TestCase):
         self.db.query(Compra).delete()
         self.db.commit()
         self.tearDown()
-        response = self.client.get("/compra/")
+        response = self.client.get("/compra/", headers=self.auth_headers)
         self.assertEqual(response.status_code, 404)
         assert response.json() == {
             "detail": "Nenhuma compra encontrada com os filtros fornecidos"

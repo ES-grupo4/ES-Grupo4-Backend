@@ -94,7 +94,7 @@ class TestInformacoesGerais(unittest.TestCase):
         self.tearDown()
 
     def test_get_informacoes_gerais(self):
-        response = self.client.get("/informacoes-gerais/")
+        response = self.client.get("/informacoes-gerais/", headers=self.auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert data["nome_empresa"] == "Empresa"
@@ -129,6 +129,8 @@ class TestInformacoesGerais(unittest.TestCase):
             "inicio_jantar": "17:00:00",
             "fim_jantar": "20:00:00",
         }
-        response = self.client.put("/informacoes-gerais/", json=payload, headers=self.auth_headers)
+        response = self.client.put(
+            "/informacoes-gerais/", json=payload, headers=self.auth_headers
+        )
         assert response.status_code == 404
         assert response.json() == {"detail": "404: Informações gerais não encontradas."}
