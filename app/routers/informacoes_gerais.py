@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from sqlalchemy.orm import Session
+from ..core.permissoes import requer_permissao
 from ..models.models import InformacoesGerais
 from ..models.db_setup import get_bd
 from ..schemas.informacoes_gerais import InformacoesGeraisDTO
@@ -17,6 +18,7 @@ router = informacoes_gerais_router
     "/",
     summary="Cria ou substitui as informações gerais",
     response_model=InformacoesGeraisDTO,
+    dependencies=[requer_permissao("admin")],
 )
 def create_or_replace_info(
     data: InformacoesGeraisDTO,
@@ -57,6 +59,7 @@ def read_info(db: Session = Depends(get_bd)):
     summary="Atualiza as informações gerais",
     tags=["Informações Gerais"],
     response_model=InformacoesGeraisDTO,
+    dependencies=[requer_permissao("admin")],
 )
 def update_info(data: InformacoesGeraisDTO, db: Session = Depends(get_bd)):
     # tabela com apenas um registro
