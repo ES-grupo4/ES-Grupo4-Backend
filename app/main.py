@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+
+from app.core.seguranca import criptografa_cpf, gerar_hash, hash_cpf
 from .routers.funcionario import funcionarios_router
 from .routers.auth import auth_router
 from .routers.compra import compra_router
@@ -17,16 +19,22 @@ from datetime import date
 @asynccontextmanager
 async def setUpAdmin(app: FastAPI):
     db = Session(engine)
+    senha = gerar_hash("John123!")
+    cpf_hash = hash_cpf("19896507406")
+    cpf_cript = criptografa_cpf("19896507406")
     admin_data = {
-        "cpf": "19896507406",
+        "cpf_hash": cpf_hash,
+        "cpf_cript": cpf_cript,
         "nome": "John Doe",
-        "senha": "John123!",
+        "senha": senha,
         "email": "john@doe.com",
         "tipo": "admin",
         "data_entrada": date(2025, 8, 4),
     }
 
-    admin_existente = db.query(Funcionario).filter_by(cpf=admin_data["cpf"]).first()
+    admin_existente = (
+        db.query(Funcionario).filter_by(cpf_hash=admin_data["cpf_hash"]).first()
+    )
     if not admin_existente:
         admin = Funcionario(**admin_data)
         db.add(admin)
@@ -38,8 +46,8 @@ async def setUpAdmin(app: FastAPI):
 app = FastAPI(lifespan=setUpAdmin)
 
 # =====================================
-# Liberando acesso da api 
-origins = ['*']
+# Liberando acesso da api
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,

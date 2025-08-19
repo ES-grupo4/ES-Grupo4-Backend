@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Annotated
-from pydantic import BaseModel, StringConstraints, ConfigDict
+from pydantic import BaseModel, StringConstraints, ConfigDict, Field
+from ..core.seguranca import fernet
 
 
 class ClienteEnum(str, Enum):
@@ -42,13 +43,19 @@ class ClienteIn(BaseModel):
 class ClienteOut(BaseModel):
     id: int
     nome: str
-    cpf: str
+    cpf: str = Field(..., description="CPF descriptografado")
     subtipo: str
     matricula: str
     tipo: ClienteEnum
     graduando: bool
     pos_graduando: bool
     bolsista: bool
+
+    @classmethod
+    def from_orm(cls, obj):
+        data = obj.__dict__.copy()
+        data["cpf"] = obj.get_cpf(fernet)
+        return cls(**data)
 
     model_config = ConfigDict(
         from_attributes=True,

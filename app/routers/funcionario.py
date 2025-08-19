@@ -1,6 +1,6 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, status
 
-from ..models.models import Funcionario
+from ..models.models import Funcionario, FuncionarioTipo
 from ..models.db_setup import conexao_bd
 from ..schemas.funcionario import (
     FuncionarioEdit,
@@ -8,8 +8,9 @@ from ..schemas.funcionario import (
     FuncionarioIn,
     tipoFuncionarioEnum,
 )
-from ..utils.permissoes import requer_permissao
+from ..core.permissoes import requer_permissao
 from ..utils.validacao import valida_e_retorna_cpf
+from ..core.seguranca import gerar_hash, criptografa_cpf, hash_cpf
 from pydantic import EmailStr
 from datetime import date
 
@@ -25,11 +26,16 @@ router = funcionarios_router
 def valida_funcionario(funcionario: FuncionarioIn, db: conexao_bd):
     funcionario.cpf = valida_e_retorna_cpf(funcionario.cpf)
 
-    if funcionario.cpf in db.scalars(select(Funcionario.cpf)):
-        raise HTTPException(status_code=409, detail="CPF já cadastrado no sistema")
+    if hash_cpf(funcionario.cpf) in db.scalars(select(Funcionario.cpf_hash)):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="CPF já cadastrado no sistema"
+        )
 
     if funcionario.email in db.scalars(select(Funcionario.email)):
-        raise HTTPException(status_code=409, detail="Email já cadastrado no sistema")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email já cadastrado no sistema",
+        )
 
     return funcionario
 
@@ -44,11 +50,12 @@ def cadastra_funcionario(funcionario: FuncionarioIn, db: conexao_bd):
     funcionario = valida_funcionario(funcionario, db)
 
     usuario = Funcionario(
-        cpf=funcionario.cpf,
+        cpf_cript=criptografa_cpf(funcionario.cpf),
+        cpf_hash=hash_cpf(funcionario.cpf),
         nome=funcionario.nome,
-        senha=funcionario.senha,
+        senha=gerar_hash(funcionario.senha),
         email=funcionario.email,
-        tipo=funcionario.tipo.lower(),
+        tipo=FuncionarioTipo(funcionario.tipo),
         data_entrada=date.today(),
     )
 
@@ -64,17 +71,23 @@ def cadastra_funcionario(funcionario: FuncionarioIn, db: conexao_bd):
     dependencies=[requer_permissao("admin")],
 )
 def atualiza_funcionario(id: int, funcionario: FuncionarioEdit, db: conexao_bd):
-    funcionarioExistente = db.scalar(select(Funcionario).where(Funcionario.id == id))
+    funcionario_existente = db.scalar(select(Funcionario).where(Funcionario.id == id))
 
-    if not funcionarioExistente:
-        raise HTTPException(status_code=404, detail="Funcionário não encontrado")
+    if not funcionario_existente:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Funcionário não encontrado"
+        )
 
     for campo, valor in funcionario.model_dump(exclude_unset=True).items():
-        setattr(funcionarioExistente, campo, valor)
+        if campo == "cpf":
+            valor = valida_e_retorna_cpf(valor)
+            funcionario_existente.cpf_cript = criptografa_cpf(valor)
+            funcionario_existente.cpf_hash = hash_cpf(valor)
+        setattr(funcionario_existente, campo, valor)
 
     db.commit()
-    db.refresh(funcionarioExistente)
-    return funcionarioExistente
+    db.refresh(funcionario_existente)
+    return funcionario_existente
 
 
 @router.get(
@@ -107,7 +120,7 @@ def busca_funcionarios(
         query = query.where(Funcionario.id == id)
 
     if cpf:
-        query = query.where(Funcionario.cpf == cpf)
+        query = query.where(Funcionario.cpf_hash == hash_cpf(cpf))
 
     if nome:
         query = query.where(Funcionario.nome.ilike(f"%{nome}%"))
@@ -125,7 +138,8 @@ def busca_funcionarios(
         query = query.where(Funcionario.data_saida == data_saida)
 
     usuarios = db.scalars(query).all()
-    return usuarios
+
+    return [FuncionarioOut.from_orm(u) for u in usuarios]
 
 
 @router.delete(
@@ -136,9 +150,13 @@ def busca_funcionarios(
 )
 def deleta_funcionario(db: conexao_bd, cpf: str):
     cpf = valida_e_retorna_cpf(cpf)
-    funcionario = db.scalar(select(Funcionario).where(Funcionario.cpf == cpf))
+    funcionario = db.scalar(
+        select(Funcionario).where(Funcionario.cpf_hash == hash_cpf(cpf))
+    )
     if not funcionario:
-        raise HTTPException(status_code=404, detail="Funcionário não encontrado")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Funcionário não encontrado"
+        )
 
     db.delete(funcionario)
     db.commit()
@@ -154,12 +172,19 @@ def deleta_funcionario(db: conexao_bd, cpf: str):
 def desativa_funcionario(db: conexao_bd, cpf: str, data_saida: date):
     cpf = valida_e_retorna_cpf(cpf)
 
-    funcionario = db.scalar(select(Funcionario).where(Funcionario.cpf == cpf))
+    funcionario = db.scalar(
+        select(Funcionario).where(Funcionario.cpf_hash == hash_cpf(cpf))
+    )
     if not funcionario:
-        raise HTTPException(status_code=404, detail="Funcionário não encontrado")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Funcionário não encontrado"
+        )
 
     if funcionario.data_saida is not None:
-        raise HTTPException(status_code=400, detail="Funcionário já foi desativado")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Funcionário já foi desativado",
+        )
 
     funcionario.email = None
     funcionario.data_saida = data_saida
