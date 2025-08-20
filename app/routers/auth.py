@@ -3,7 +3,7 @@ from sqlalchemy import select
 from ..models.models import Funcionario
 from ..models.db_setup import conexao_bd
 from ..schemas.auth import LoginDTO
-from ..core.seguranca import hash_cpf, verificar_hash, cria_token_de_acesso
+from ..core.seguranca import gerar_hash, verificar_hash, cria_token_de_acesso
 from ..utils.validacao import valida_e_retorna_cpf
 
 auth_router = APIRouter(
@@ -15,7 +15,9 @@ router = auth_router
 
 def get_usuario_por_cpf(db: conexao_bd, cpf: str):
     cpf = valida_e_retorna_cpf(cpf)
-    usuario = db.scalar(select(Funcionario).where(Funcionario.cpf_hash == hash_cpf(cpf)))
+    usuario = db.scalar(
+        select(Funcionario).where(Funcionario.cpf_hash == gerar_hash(cpf))
+    )
     return usuario
 
 
@@ -32,4 +34,7 @@ async def login(login_data: LoginDTO, db: conexao_bd):
         return {"token": token}
 
     else:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Usuário ou senha incorretos")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Usuário ou senha incorretos",
+        )

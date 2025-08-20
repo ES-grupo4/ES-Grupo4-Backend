@@ -9,9 +9,5 @@ dependencies = [
     "sqlalchemy>=2.0.41",
     "python-jose[cryptography]",
     "validate_docbr",
-    "polars>=1.32.0",
-    "passlib[bcrypt]"
+    "polars>=1.32.0"
 ]
-
-["mypy-passlib.*"]
-ignore_missing_imports = true

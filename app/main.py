@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from app.core.seguranca import criptografa_cpf, gerar_hash, hash_cpf
+from app.core.seguranca import criptografa_cpf, gerar_hash
 from .routers.funcionario import funcionarios_router
 from .routers.auth import auth_router
 from .routers.compra import compra_router
@@ -20,7 +20,7 @@ from datetime import date
 async def setUpAdmin(app: FastAPI):
     db = Session(engine)
     senha = gerar_hash("John123!")
-    cpf_hash = hash_cpf("19896507406")
+    cpf_hash = gerar_hash("19896507406")
     cpf_cript = criptografa_cpf("19896507406")
     admin_data = {
         "cpf_hash": cpf_hash,

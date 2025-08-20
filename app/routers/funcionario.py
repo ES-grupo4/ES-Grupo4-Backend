@@ -10,7 +10,7 @@ from ..schemas.funcionario import (
 )
 from ..core.permissoes import requer_permissao
 from ..utils.validacao import valida_e_retorna_cpf
-from ..core.seguranca import gerar_hash, criptografa_cpf, hash_cpf
+from ..core.seguranca import gerar_hash, criptografa_cpf
 from pydantic import EmailStr
 from datetime import date
 
@@ -26,7 +26,7 @@ router = funcionarios_router
 def valida_funcionario(funcionario: FuncionarioIn, db: conexao_bd):
     funcionario.cpf = valida_e_retorna_cpf(funcionario.cpf)
 
-    if hash_cpf(funcionario.cpf) in db.scalars(select(Funcionario.cpf_hash)):
+    if gerar_hash(funcionario.cpf) in db.scalars(select(Funcionario.cpf_hash)):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="CPF já cadastrado no sistema"
         )
@@ -51,7 +51,7 @@ def cadastra_funcionario(funcionario: FuncionarioIn, db: conexao_bd):
 
     usuario = Funcionario(
         cpf_cript=criptografa_cpf(funcionario.cpf),
-        cpf_hash=hash_cpf(funcionario.cpf),
+        cpf_hash=gerar_hash(funcionario.cpf),
         nome=funcionario.nome,
         senha=gerar_hash(funcionario.senha),
         email=funcionario.email,
@@ -82,7 +82,7 @@ def atualiza_funcionario(id: int, funcionario: FuncionarioEdit, db: conexao_bd):
         if campo == "cpf":
             valor = valida_e_retorna_cpf(valor)
             funcionario_existente.cpf_cript = criptografa_cpf(valor)
-            funcionario_existente.cpf_hash = hash_cpf(valor)
+            funcionario_existente.cpf_hash = gerar_hash(valor)
         setattr(funcionario_existente, campo, valor)
 
     db.commit()
@@ -95,6 +95,7 @@ def atualiza_funcionario(id: int, funcionario: FuncionarioEdit, db: conexao_bd):
     summary="Retorna todos os funcionários cadastrados",
     tags=["Funcionário"],
     response_model=list[FuncionarioOut],
+    dependencies=[requer_permissao("funcionario", "admin")],
 )
 def busca_funcionarios(
     db: conexao_bd,
@@ -120,7 +121,7 @@ def busca_funcionarios(
         query = query.where(Funcionario.id == id)
 
     if cpf:
-        query = query.where(Funcionario.cpf_hash == hash_cpf(cpf))
+        query = query.where(Funcionario.cpf_hash == gerar_hash(cpf))
 
     if nome:
         query = query.where(Funcionario.nome.ilike(f"%{nome}%"))
@@ -151,7 +152,7 @@ def busca_funcionarios(
 def deleta_funcionario(db: conexao_bd, cpf: str):
     cpf = valida_e_retorna_cpf(cpf)
     funcionario = db.scalar(
-        select(Funcionario).where(Funcionario.cpf_hash == hash_cpf(cpf))
+        select(Funcionario).where(Funcionario.cpf_hash == gerar_hash(cpf))
     )
     if not funcionario:
         raise HTTPException(
@@ -173,7 +174,7 @@ def desativa_funcionario(db: conexao_bd, cpf: str, data_saida: date):
     cpf = valida_e_retorna_cpf(cpf)
 
     funcionario = db.scalar(
-        select(Funcionario).where(Funcionario.cpf_hash == hash_cpf(cpf))
+        select(Funcionario).where(Funcionario.cpf_hash == gerar_hash(cpf))
     )
     if not funcionario:
         raise HTTPException(
