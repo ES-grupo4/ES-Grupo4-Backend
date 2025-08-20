@@ -2,7 +2,11 @@ import unittest
 import io
 import polars as pl
 from fastapi.testclient import TestClient
-from app.core.seguranca import criptografa_cpf, hash_cpf, descriptografa_cpf, gerar_hash
+from app.core.seguranca import (
+    criptografa_cpf,
+    gerar_hash,
+    descriptografa_cpf,
+)
 from datetime import date
 from app.main import app
 from app.models.models import Compra, Funcionario, Cliente
@@ -13,7 +17,7 @@ from datetime import datetime
 
 client = TestClient(app)
 cliente = Cliente(
-    cpf_hash=hash_cpf("39410861977"),
+    cpf_hash=gerar_hash("39410861977"),
     cpf_cript=criptografa_cpf("39410861977"),
     nome="Fulano",
     matricula="20249999",
@@ -29,11 +33,11 @@ class CompraTestCase(unittest.TestCase):
     def setUpClass(cls):
         cls.db: Session = Session(bind=engine)
         db_cliente = (
-            cls.db.query(Cliente).filter_by(cpf_hash=hash_cpf("39410861977")).first()
+            cls.db.query(Cliente).filter_by(cpf_hash=gerar_hash("39410861977")).first()
         )
         if not db_cliente:
             cls.cliente = Cliente(
-                cpf_hash=hash_cpf("39410861977"),
+                cpf_hash=gerar_hash("39410861977"),
                 cpf_cript=criptografa_cpf("39410861977"),
                 nome="Fulano",
                 matricula="20249999",
@@ -62,7 +66,7 @@ class CompraTestCase(unittest.TestCase):
 
         # Mockando um funcionario pra ter permissão nas rotas
         self.funcionario_data = {
-            "cpf_hash": hash_cpf("19896507406"),
+            "cpf_hash": gerar_hash("19896507406"),
             "cpf_cript": criptografa_cpf("19896507406"),
             "nome": "John Doe",
             "senha": gerar_hash("John123!"),
@@ -97,7 +101,7 @@ class CompraTestCase(unittest.TestCase):
         self.db.query(Compra).delete()
         funcionario = (
             self.db.query(Funcionario)
-            .filter_by(cpf_hash=hash_cpf("19896507406"))
+            .filter_by(cpf_hash=gerar_hash("19896507406"))
             .first()
         )
         if funcionario:

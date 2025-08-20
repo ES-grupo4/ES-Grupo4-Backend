@@ -4,7 +4,11 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.models.models import InformacoesGerais, Funcionario
 from app.models.db_setup import engine
-from app.core.seguranca import hash_cpf, gerar_hash, criptografa_cpf, descriptografa_cpf
+from app.core.seguranca import (
+    gerar_hash,
+    criptografa_cpf,
+    descriptografa_cpf,
+)
 from datetime import time
 
 from sqlalchemy.orm import Session
@@ -41,7 +45,7 @@ class TestInformacoesGerais(unittest.TestCase):
 
         # Mockando um admin pra ter permissão nas rotas
         self.admin_data = {
-            "cpf_hash": hash_cpf("19896507406"),
+            "cpf_hash": gerar_hash("19896507406"),
             "cpf_cript": criptografa_cpf("19896507406"),
             "nome": "John Doe",
             "senha": gerar_hash("John123!"),

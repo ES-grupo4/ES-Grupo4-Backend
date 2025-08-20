@@ -5,7 +5,11 @@ from sqlalchemy.orm import Session
 from app.main import app
 from app.models.models import Cliente, Funcionario
 from app.models.db_setup import engine
-from app.core.seguranca import hash_cpf, criptografa_cpf, gerar_hash, descriptografa_cpf
+from app.core.seguranca import (
+    gerar_hash,
+    criptografa_cpf,
+    descriptografa_cpf,
+)
 from datetime import date
 import polars as pl
 
@@ -19,7 +23,7 @@ class ClienteTestCase(unittest.TestCase):
 
         # Mockando um funcionario pra ter permissão nas rotas
         self.funcionario_data = {
-            "cpf_hash": hash_cpf("19896507406"),
+            "cpf_hash": gerar_hash("19896507406"),
             "cpf_cript": criptografa_cpf("19896507406"),
             "nome": "John Doe",
             "senha": gerar_hash("John123!"),
@@ -61,7 +65,7 @@ class ClienteTestCase(unittest.TestCase):
             "19896507406",
         ]
         for cpf in cpfs_testados:
-            cliente = self.db.query(Cliente).filter_by(cpf_hash=hash_cpf(cpf)).first()
+            cliente = self.db.query(Cliente).filter_by(cpf_hash=gerar_hash(cpf)).first()
             if cliente:
                 self.db.delete(cliente)
         self.db.commit()
@@ -364,7 +368,7 @@ class ClienteTestCase(unittest.TestCase):
 
         # Verifica no banco
         cliente = (
-            self.db.query(Cliente).filter_by(cpf_hash=hash_cpf("55566677788")).first()
+            self.db.query(Cliente).filter_by(cpf_hash=gerar_hash("55566677788")).first()
         )
         assert cliente is not None
         self.assertEqual(cliente.nome, "Cliente A")

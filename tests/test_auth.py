@@ -5,7 +5,11 @@ from sqlalchemy.orm import Session
 from app.main import app
 from app.models.models import Funcionario
 from app.models.db_setup import engine
-from app.core.seguranca import descriptografa_cpf, hash_cpf, criptografa_cpf, gerar_hash
+from app.core.seguranca import (
+    descriptografa_cpf,
+    criptografa_cpf,
+    gerar_hash,
+)
 
 client = TestClient(app)
 
@@ -14,7 +18,7 @@ class AuthTestCase(unittest.TestCase):
     def setUp(self):
         self.db = Session(engine)
         self.funcionario_data = {
-            "cpf_hash": hash_cpf("19896507406"),
+            "cpf_hash": gerar_hash("19896507406"),
             "cpf_cript": criptografa_cpf("19896507406"),
             "nome": "John Doe",
             "senha": gerar_hash("John123!"),

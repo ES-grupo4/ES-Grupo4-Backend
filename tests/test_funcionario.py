@@ -2,7 +2,11 @@ from datetime import date
 import unittest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
-from app.core.seguranca import criptografa_cpf, descriptografa_cpf, hash_cpf, gerar_hash
+from app.core.seguranca import (
+    criptografa_cpf,
+    descriptografa_cpf,
+    gerar_hash,
+)
 from app.main import app
 from app.models.models import Funcionario
 from app.models.db_setup import engine
@@ -15,7 +19,7 @@ class FuncionarioTestCase(unittest.TestCase):
         self.db = Session(engine)
         # Mockando um admin pra ter permissão nas rotas
         self.admin_data = {
-            "cpf_hash": hash_cpf("19896507406"),
+            "cpf_hash": gerar_hash("19896507406"),
             "cpf_cript": criptografa_cpf("19896507406"),
             "nome": "John Doe",
             "senha": gerar_hash("John123!"),
@@ -60,7 +64,7 @@ class FuncionarioTestCase(unittest.TestCase):
     def tearDown(self):
         for cpf in ["19896507406", "79920205451", "89159073454"]:
             funcionario = (
-                self.db.query(Funcionario).filter_by(cpf_hash=hash_cpf(cpf)).first()
+                self.db.query(Funcionario).filter_by(cpf_hash=gerar_hash(cpf)).first()
             )
             if funcionario:
                 self.db.delete(funcionario)
