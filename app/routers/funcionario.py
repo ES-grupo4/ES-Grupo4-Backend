@@ -1,4 +1,8 @@
 from fastapi import APIRouter, HTTPException, Query, status
+from sqlalchemy import select, func
+from math import ceil
+from pydantic import EmailStr
+from datetime import date
 
 from ..models.models import Funcionario, FuncionarioTipo
 from ..models.db_setup import conexao_bd
@@ -7,14 +11,11 @@ from ..schemas.funcionario import (
     FuncionarioOut,
     FuncionarioIn,
     tipoFuncionarioEnum,
+    FuncionarioPaginationOut,
 )
 from ..core.permissoes import requer_permissao
 from ..utils.validacao import valida_e_retorna_cpf
 from ..core.seguranca import gerar_hash, criptografa_cpf
-from pydantic import EmailStr
-from datetime import date
-
-from sqlalchemy import select
 from validate_docbr import CPF  # type: ignore
 
 cpf = CPF()
@@ -94,7 +95,7 @@ def atualiza_funcionario(id: int, funcionario: FuncionarioEdit, db: conexao_bd):
     "/",
     summary="Retorna todos os funcionários cadastrados",
     tags=["Funcionário"],
-    response_model=list[FuncionarioOut],
+    response_model=FuncionarioPaginationOut,
     dependencies=[requer_permissao("funcionario", "admin")],
 )
 def busca_funcionarios(
@@ -112,35 +113,42 @@ def busca_funcionarios(
         None, description="Filtra pela data de entrada do funcionário"
     ),
     data_saida: date | None = Query(
-        None, description="Filtra pela data de saida do funcionário"
+        None, description="Filtra pela data de saída do funcionário"
+    ),
+    page: int = Query(1, ge=1, description="Número da página (padrão 1)"),
+    page_size: int = Query(
+        10, ge=1, le=100, description="Quantidade de registros por página (padrão 10)"
     ),
 ):
     query = select(Funcionario)
 
     if id:
         query = query.where(Funcionario.id == id)
-
     if cpf:
         query = query.where(Funcionario.cpf_hash == gerar_hash(cpf))
-
     if nome:
         query = query.where(Funcionario.nome.ilike(f"%{nome}%"))
-
     if tipo:
         query = query.where(Funcionario.tipo == tipo)
-
     if email:
         query = query.where(Funcionario.email == email)
-
     if data_entrada:
         query = query.where(Funcionario.data_entrada == data_entrada)
-
     if data_saida:
         query = query.where(Funcionario.data_saida == data_saida)
 
-    usuarios = db.scalars(query).all()
+    offset = (page - 1) * page_size
+    total = db.scalar(select(func.count()).select_from(query.subquery()))
+    funcionarios_na_pagina = db.scalars(query.offset(offset).limit(page_size)).all()
+    funcionarios_out = [FuncionarioOut.from_orm(f) for f in funcionarios_na_pagina]
 
-    return [FuncionarioOut.from_orm(u) for u in usuarios]
+    return {
+        "total_in_page": len(funcionarios_out),
+        "page": page,
+        "page_size": page_size,
+        "total_pages": ceil(total / page_size) if total else 0,
+        "items": funcionarios_out,
+    }
 
 
 @router.delete(

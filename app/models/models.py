@@ -43,7 +43,7 @@ class Usuario(Base):
 
     def __repr__(self) -> str:
         return f"Usuario: {self.id=} {self.nome=} {self.subtipo}"
-    
+
     def get_cpf(self, fernet):
         if not self.cpf_cript:
             return None
