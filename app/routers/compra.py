@@ -77,7 +77,7 @@ async def cadastra_compra_csv(db: conexao_bd, arquivo: UploadFile = File(...)):
 
 @router.get(
     "/",
-    summary="Retorna compras a partir de um filtro",
+    summary="Retorna compras (com filtros opcionais)",
     tags=["Compra"],
     response_model=CompraPaginationOut,
 )
@@ -121,7 +121,9 @@ def filtra_compra(
     offset = (page - 1) * page_size
     total = db.scalar(select(func.count()).select_from(query.subquery()))
     compras_na_pagina = db.scalars(query.offset(offset).limit(page_size)).all()
-    compras_out = [CompraOut.model_validate(c) for c in compras_na_pagina]
+    compras_out = [
+        CompraOut.model_validate(c, from_attributes=True) for c in compras_na_pagina
+    ]
 
     return {
         "total_in_page": len(compras_na_pagina),

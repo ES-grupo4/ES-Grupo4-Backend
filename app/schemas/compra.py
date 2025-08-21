@@ -27,5 +27,6 @@ class CompraIn(BaseModel):
 class CompraPaginationOut(BaseModel):
     total_in_page: int
     page: int
+    page_size: int
     total_pages: int
     items: list[CompraOut]
