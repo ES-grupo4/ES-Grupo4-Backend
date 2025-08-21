@@ -11,7 +11,6 @@ class ClienteEnum(str, Enum):
     aluno = "aluno"
 
 
-
 class ClienteIn(BaseModel):
     cpf: Annotated[
         str, StringConstraints(strip_whitespace=True, min_length=11, max_length=14)
@@ -71,8 +70,9 @@ class ClienteOut(BaseModel):
                 "pos_graduando": False,
                 "bolsista": True,
             }
-        }
+        },
     )
+
 
 class ClientePaginationOut(BaseModel):
     total_in_page: int
