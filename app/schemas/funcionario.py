@@ -70,3 +70,42 @@ class FuncionarioEdit(BaseModel):
             }
         }
     )
+
+
+class FuncionarioPaginationOut(BaseModel):
+    total_in_page: int
+    page: int
+    page_size: int
+    total_pages: int
+    items: list[FuncionarioOut]
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "total_in_page": 2,
+                "page": 1,
+                "page_size": 10,
+                "total_pages": 1,
+                "items": [
+                    {
+                        "id": 1,
+                        "nome": "John Doe",
+                        "cpf": "79920205451",
+                        "email": "john@doe.com",
+                        "tipo": "funcionario",
+                        "data_entrada": "2025-08-07",
+                        "data_saida": None,
+                    },
+                    {
+                        "id": 2,
+                        "nome": "Jane Smith",
+                        "cpf": "23456789012",
+                        "email": "jane@smith.com",
+                        "tipo": "admin",
+                        "data_entrada": "2025-08-10",
+                        "data_saida": None,
+                    },
+                ],
+            }
+        }
+    )
