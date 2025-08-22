@@ -128,6 +128,55 @@ def busca_funcionarios(
     return usuarios
 
 
+@router.get(
+    "/admin/",
+    summary="Retorna todos os administradores cadastrados",
+    tags=["Funcionário"],
+    response_model=list[FuncionarioOut],
+)
+def busca_admins(
+    db: conexao_bd,
+    id: int | None = Query(None, description="Filtra pelo id do admin"),
+    cpf: str | None = Query(None, description="Filtra pelo cpf do admin"),
+    nome: str | None = Query(None, description="Filtra pelo nome do admin"),
+    email: EmailStr | None = Query(None, description="Filtra pelo email do admin"),
+    tipo: tipoFuncionarioEnum | None = Query(
+        None, description="Filtra pelo tipo do admin"
+    ),
+    data_entrada: date | None = Query(
+        None, description="Filtra pela data de entrada do admin"
+    ),
+    data_saida: date | None = Query(
+        None, description="Filtra pela data de saida do admin"
+    ),
+):
+    query = select(Funcionario).where(Funcionario.tipo == "admin")
+
+    if id:
+        query = query.where(Funcionario.id == id)
+
+    if cpf:
+        query = query.where(Funcionario.cpf == cpf)
+
+    if nome:
+        query = query.where(Funcionario.nome.ilike(f"%{nome}%"))
+
+    if tipo:
+        query = query.where(Funcionario.tipo == tipo)
+
+    if email:
+        query = query.where(Funcionario.email == email)
+
+    if data_entrada:
+        query = query.where(Funcionario.data_entrada == data_entrada)
+
+    if data_saida:
+        query = query.where(Funcionario.data_saida == data_saida)
+
+    usuarios = db.scalars(query).all()
+    return usuarios
+
+
 @router.delete(
     "/",
     summary="Remove um funcionário pelo CPF",
