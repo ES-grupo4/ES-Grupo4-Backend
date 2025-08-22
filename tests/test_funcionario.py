@@ -69,6 +69,12 @@ class FuncionarioTestCase(unittest.TestCase):
         response = client.get(f"/funcionario/?cpf={cpf}", headers=self.auth_headers)
         return response
 
+    def busca_admin_por_cpf(self, cpf):
+        response = client.get(
+            f"/funcionario/admin/?cpf={cpf}", headers=self.auth_headers
+        )
+        return response
+
     def test_cadastro_funcionario_sucesso(self):
         response = self.cria_funcionario()
         self.assertEqual(response.status_code, 200)
@@ -348,9 +354,6 @@ class FuncionarioTestCase(unittest.TestCase):
         self.assertIn(
             self.busca_funcionario_por_cpf("79920205451").json()[0], response.json()
         )
-        self.assertIn(
-            self.busca_funcionario_por_cpf("19896507406").json()[0], response.json()
-        )
 
     def test_busca_funcionarios_por_id(self):
         self.cria_funcionario()
@@ -428,51 +431,12 @@ class FuncionarioTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual([], response.json())
 
-    def test_busca_funcionarios_por_tipo_funcionario(self):
-        self.cria_funcionario()
-        response = client.get(
-            "/funcionario/?tipo=funcionario", headers=self.auth_headers
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            self.busca_funcionario_por_cpf("79920205451").json(), response.json()
-        )
-
-    def test_busca_funcionarios_por_tipo_admin(self):
-        self.cria_funcionario()
-        response = client.get("/funcionario/?tipo=admin", headers=self.auth_headers)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            self.busca_funcionario_por_cpf("19896507406").json(), response.json()
-        )
-
-    def test_busca_funcionarios_por_tipo_invalido(self):
-        self.cria_funcionario()
-        response = client.get("/funcionario/?tipo=cliente", headers=self.auth_headers)
-
-        self.assertEqual(response.status_code, 422)
-
-        erro = response.json()
-        self.assertIn("detail", erro)
-        self.assertTrue(
-            any(
-                d.get("ctx", {}).get("expected") == "'funcionario' or 'admin'"
-                for d in erro["detail"]
-            ),
-            "O erro não é de tipo inválido",
-        )
-
     def test_busca_funcionarios_por_data_entrada(self):
         self.cria_funcionario()
-        response = client.get("/funcionario/?data_entrada=2025-08-04")
+        response = client.get("/funcionario/?data_entrada=2025-08-22")
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(
-            self.busca_funcionario_por_cpf("19896507406").json()[0], response.json()
-        )
-        self.assertNotIn(
             self.busca_funcionario_por_cpf("79920205451").json()[0], response.json()
         )
 
@@ -550,18 +514,18 @@ class FuncionarioTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(
-            self.busca_funcionario_por_cpf("19896507406").json()[0], response.json()
+            self.busca_admin_por_cpf("19896507406").json()[0], response.json()
         )
 
     def test_busca_admins_por_id(self):
-        admin = self.busca_funcionario_por_cpf("19896507406").json()[0]
+        admin = self.busca_admin_por_cpf("19896507406").json()[0]
         response = client.get(
             f"/funcionario/admin/?id={admin['id']}", headers=self.auth_headers
         )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
-            self.busca_funcionario_por_cpf("19896507406").json(), response.json()
+            self.busca_admin_por_cpf("19896507406").json(), response.json()
         )
 
     def test_busca_admins_por_id_inexistente(self):
@@ -577,7 +541,7 @@ class FuncionarioTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
-            self.busca_funcionario_por_cpf("19896507406").json(), response.json()
+            self.busca_admin_por_cpf("19896507406").json(), response.json()
         )
 
     def test_busca_admins_por_cpf_inexistente(self):
@@ -595,7 +559,7 @@ class FuncionarioTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
-            self.busca_funcionario_por_cpf("19896507406").json(), response.json()
+            self.busca_admin_por_cpf("19896507406").json(), response.json()
         )
 
     def test_busca_admins_por_nome_inexistente(self):
@@ -613,7 +577,7 @@ class FuncionarioTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
-            self.busca_funcionario_por_cpf("19896507406").json(), response.json()
+            self.busca_admin_por_cpf("19896507406").json(), response.json()
         )
 
     def test_busca_admins_por_email_inexistente(self):
@@ -629,7 +593,7 @@ class FuncionarioTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(
-            self.busca_funcionario_por_cpf("19896507406").json()[0], response.json()
+            self.busca_admin_por_cpf("19896507406").json()[0], response.json()
         )
 
     def test_busca_admins_por_data_entrada_inexistente(self):

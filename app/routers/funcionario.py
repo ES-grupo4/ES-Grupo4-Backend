@@ -91,9 +91,6 @@ def busca_funcionarios(
     email: EmailStr | None = Query(
         None, description="Filtra pelo email do funcionário"
     ),
-    tipo: tipoFuncionarioEnum | None = Query(
-        None, description="Filtra pelo tipo do funcionário"
-    ),
     data_entrada: date | None = Query(
         None, description="Filtra pela data de entrada do funcionário"
     ),
@@ -101,7 +98,7 @@ def busca_funcionarios(
         None, description="Filtra pela data de saida do funcionário"
     ),
 ):
-    query = select(Funcionario)
+    query = select(Funcionario).where(Funcionario.tipo == "funcionario")
 
     if id:
         query = query.where(Funcionario.id == id)
@@ -111,9 +108,6 @@ def busca_funcionarios(
 
     if nome:
         query = query.where(Funcionario.nome.ilike(f"%{nome}%"))
-
-    if tipo:
-        query = query.where(Funcionario.tipo == tipo)
 
     if email:
         query = query.where(Funcionario.email == email)
@@ -140,9 +134,6 @@ def busca_admins(
     cpf: str | None = Query(None, description="Filtra pelo cpf do admin"),
     nome: str | None = Query(None, description="Filtra pelo nome do admin"),
     email: EmailStr | None = Query(None, description="Filtra pelo email do admin"),
-    tipo: tipoFuncionarioEnum | None = Query(
-        None, description="Filtra pelo tipo do admin"
-    ),
     data_entrada: date | None = Query(
         None, description="Filtra pela data de entrada do admin"
     ),
@@ -160,9 +151,6 @@ def busca_admins(
 
     if nome:
         query = query.where(Funcionario.nome.ilike(f"%{nome}%"))
-
-    if tipo:
-        query = query.where(Funcionario.tipo == tipo)
 
     if email:
         query = query.where(Funcionario.email == email)
