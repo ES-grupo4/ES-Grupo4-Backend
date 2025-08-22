@@ -7,9 +7,14 @@ from ..models.db_setup import conexao_bd
 from ..models.models import Compra
 from ..models.models import Cliente
 from ..schemas.compra import CompraIn, CompraOut, CompraPaginationOut
+from ..core.permissoes import requer_permissao
 from datetime import datetime
 
-compra_router = APIRouter(prefix="/compra", tags=["Compra"])
+compra_router = APIRouter(
+    prefix="/compra",
+    tags=["Compra"],
+    dependencies=[requer_permissao("funcionario", "admin")],
+)
 router = compra_router
 
 

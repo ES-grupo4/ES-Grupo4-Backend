@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Annotated
-from pydantic import BaseModel, StringConstraints, field_validator, ConfigDict
+from pydantic import BaseModel, StringConstraints, ConfigDict, Field
+from ..core.seguranca import fernet
 
 
 class ClienteEnum(str, Enum):
@@ -12,7 +13,7 @@ class ClienteEnum(str, Enum):
 
 class ClienteIn(BaseModel):
     cpf: Annotated[
-        str, StringConstraints(strip_whitespace=True, min_length=11, max_length=11)
+        str, StringConstraints(strip_whitespace=True, min_length=11, max_length=14)
     ]
     nome: str
     matricula: Annotated[
@@ -23,17 +24,10 @@ class ClienteIn(BaseModel):
     pos_graduando: bool
     bolsista: bool
 
-    @field_validator("cpf")
-    @classmethod
-    def cpf_deve_conter_apenas_digitos(cls, v: str) -> str:
-        if not v.isdigit():
-            raise ValueError("O CPF deve conter somente dígitos numéricos.")
-        return v
-
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "cpf": "12345678901",
+                "cpf": "394.108.619-77",
                 "nome": "João Pedro",
                 "matricula": "20240001",
                 "tipo": "aluno",
@@ -48,7 +42,7 @@ class ClienteIn(BaseModel):
 class ClienteOut(BaseModel):
     id: int
     nome: str
-    cpf: str
+    cpf: str = Field(..., description="CPF descriptografado")
     subtipo: str
     matricula: str
     tipo: ClienteEnum
@@ -56,12 +50,19 @@ class ClienteOut(BaseModel):
     pos_graduando: bool
     bolsista: bool
 
+    @classmethod
+    def from_orm(cls, obj):
+        data = obj.__dict__.copy()
+        data["cpf"] = obj.get_cpf(fernet)
+        return cls(**data)
+
     model_config = ConfigDict(
+        from_attributes=True,
         json_schema_extra={
             "example": {
                 "id": 1,
                 "nome": "João Pedro",
-                "cpf": "12345678901",
+                "cpf": "394.108.619-77",
                 "subtipo": "regular",
                 "matricula": "20240001",
                 "tipo": "aluno",
@@ -69,14 +70,22 @@ class ClienteOut(BaseModel):
                 "pos_graduando": False,
                 "bolsista": True,
             }
-        }
+        },
     )
+
+
+class ClientePaginationOut(BaseModel):
+    total_in_page: int
+    page: int
+    page_size: int
+    total_pages: int
+    items: list[ClienteOut]
 
 
 class ClienteEdit(BaseModel):
     nome: str | None = None
     matricula: Annotated[
-        str | None, StringConstraints(strip_whitespace=True, max_length=9)
+        str | None, StringConstraints(strip_whitespace=True, min_length=9, max_length=9)
     ] = None
     tipo: ClienteEnum | None = None
     graduando: bool | None = None

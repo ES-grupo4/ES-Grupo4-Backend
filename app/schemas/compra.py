@@ -1,5 +1,5 @@
 from enum import Enum
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 
 
@@ -17,16 +17,26 @@ class CompraOut(BaseModel):
     forma_pagamento: str
 
 
-class CompraIn(BaseModel):
-    usuario_id: int
-    horario: datetime
-    local: str
-    forma_pagamento: FormaPagamentoEnum
-
-
 class CompraPaginationOut(BaseModel):
     total_in_page: int
     page: int
     page_size: int
     total_pages: int
     items: list[CompraOut]
+
+
+class CompraIn(BaseModel):
+    usuario_id: int
+    horario: datetime
+    local: str
+    forma_pagamento: FormaPagamentoEnum
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "usuario_id": "1",
+                "horario": "2025-04-12T10:50:00",
+                "local": "humanas",
+                "forma_pagamento": "pix",
+            }
+        }
+    )
