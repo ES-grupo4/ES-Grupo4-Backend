@@ -106,9 +106,6 @@ def busca_funcionarios(
     email: EmailStr | None = Query(
         None, description="Filtra pelo email do funcionário"
     ),
-    tipo: tipoFuncionarioEnum | None = Query(
-        None, description="Filtra pelo tipo do funcionário"
-    ),
     data_entrada: date | None = Query(
         None, description="Filtra pela data de entrada do funcionário"
     ),
@@ -163,9 +160,6 @@ def busca_admins(
     nome: str | None = Query(None, description="Filtra pelo nome do funcionário"),
     email: EmailStr | None = Query(
         None, description="Filtra pelo email do funcionário"
-    ),
-    tipo: tipoFuncionarioEnum | None = Query(
-        None, description="Filtra pelo tipo do funcionário"
     ),
     data_entrada: date | None = Query(
         None, description="Filtra pela data de entrada do funcionário"
