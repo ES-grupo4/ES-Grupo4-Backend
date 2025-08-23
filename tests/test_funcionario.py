@@ -293,7 +293,7 @@ class FuncionarioTestCase(unittest.TestCase):
             "nome": funcionario["nome"],  # mantém o nome original
             "email": "novoemail@email.com",
             "tipo": "funcionario",
-            "data_entrada": str(date.today()),
+            "data_entrada": "2025-08-22",
         }
 
         self.assertEqual(response.status_code, 200)
@@ -350,7 +350,7 @@ class FuncionarioTestCase(unittest.TestCase):
             "nome": "Fulaninho Games",
             "email": "novoemail@email.com",
             "tipo": "funcionario",
-            "data_entrada": str(date.today()),
+            "data_entrada": "2025-08-22",
         }
 
         self.assertEqual(response.status_code, 200)
@@ -407,7 +407,7 @@ class FuncionarioTestCase(unittest.TestCase):
             "nome": "Fulaninho Games",
             "email": funcionario["email"],
             "tipo": "funcionario",
-            "data_entrada": str(date.today()),
+            "data_entrada": "2025-08-22",
         }
 
         self.assertEqual(response.status_code, 200)
@@ -464,7 +464,7 @@ class FuncionarioTestCase(unittest.TestCase):
             "nome": "Fulaninho Games",
             "email": "novoemail@email.com",
             "tipo": funcionario["tipo"],
-            "data_entrada": str(date.today()),
+            "data_entrada": "2025-08-22",
         }
 
         self.assertEqual(response.status_code, 200)
@@ -523,7 +523,7 @@ class FuncionarioTestCase(unittest.TestCase):
             "nome": funcionario["nome"],
             "email": funcionario["email"],
             "tipo": funcionario["tipo"],
-            "data_entrada": str(date.today()),
+            "data_entrada": "2025-08-22",
         }
 
         # Verifica status de sucesso
