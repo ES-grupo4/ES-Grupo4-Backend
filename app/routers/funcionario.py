@@ -57,7 +57,7 @@ def cadastra_funcionario(funcionario: FuncionarioIn, db: conexao_bd):
         senha=gerar_hash(funcionario.senha),
         email=funcionario.email,
         tipo=FuncionarioTipo(funcionario.tipo),
-        data_entrada=date.today(),
+        data_entrada=funcionario.data_entrada,
     )
 
     db.add(usuario)
@@ -106,8 +106,60 @@ def busca_funcionarios(
     email: EmailStr | None = Query(
         None, description="Filtra pelo email do funcionário"
     ),
-    tipo: tipoFuncionarioEnum | None = Query(
-        None, description="Filtra pelo tipo do funcionário"
+    data_entrada: date | None = Query(
+        None, description="Filtra pela data de entrada do funcionário"
+    ),
+    data_saida: date | None = Query(
+        None, description="Filtra pela data de saída do funcionário"
+    ),
+    page: int = Query(1, ge=1, description="Número da página (padrão 1)"),
+    page_size: int = Query(
+        10, ge=1, le=100, description="Quantidade de registros por página (padrão 10)"
+    ),
+):
+    query = select(Funcionario).where(Funcionario.tipo == "funcionario")
+
+    if id:
+        query = query.where(Funcionario.id == id)
+    if cpf:
+        query = query.where(Funcionario.cpf_hash == gerar_hash(cpf))
+    if nome:
+        query = query.where(Funcionario.nome.ilike(f"%{nome}%"))
+    if email:
+        query = query.where(Funcionario.email == email)
+    if data_entrada:
+        query = query.where(Funcionario.data_entrada == data_entrada)
+    if data_saida:
+        query = query.where(Funcionario.data_saida == data_saida)
+
+    offset = (page - 1) * page_size
+    total = db.scalar(select(func.count()).select_from(query.subquery()))
+    funcionarios_na_pagina = db.scalars(query.offset(offset).limit(page_size)).all()
+    funcionarios_out = [FuncionarioOut.from_orm(f) for f in funcionarios_na_pagina]
+
+    return {
+        "total_in_page": len(funcionarios_out),
+        "page": page,
+        "page_size": page_size,
+        "total_pages": ceil(total / page_size) if total else 0,
+        "items": funcionarios_out,
+    }
+
+
+@router.get(
+    "/admin/",
+    summary="Retorna todos os administradores cadastrados",
+    tags=["Funcionário"],
+    response_model=FuncionarioPaginationOut,
+    dependencies=[requer_permissao("funcionario", "admin")],
+)
+def busca_admins(
+    db: conexao_bd,
+    id: int | None = Query(None, description="Filtra pelo id do funcionário"),
+    cpf: str | None = Query(None, description="Filtra pelo cpf do funcionário"),
+    nome: str | None = Query(None, description="Filtra pelo nome do funcionário"),
+    email: EmailStr | None = Query(
+        None, description="Filtra pelo email do funcionário"
     ),
     data_entrada: date | None = Query(
         None, description="Filtra pela data de entrada do funcionário"
@@ -120,7 +172,7 @@ def busca_funcionarios(
         10, ge=1, le=100, description="Quantidade de registros por página (padrão 10)"
     ),
 ):
-    query = select(Funcionario)
+    query = select(Funcionario).where(Funcionario.tipo == "admin")
 
     if id:
         query = query.where(Funcionario.id == id)
@@ -128,8 +180,6 @@ def busca_funcionarios(
         query = query.where(Funcionario.cpf_hash == gerar_hash(cpf))
     if nome:
         query = query.where(Funcionario.nome.ilike(f"%{nome}%"))
-    if tipo:
-        query = query.where(Funcionario.tipo == tipo)
     if email:
         query = query.where(Funcionario.email == email)
     if data_entrada:

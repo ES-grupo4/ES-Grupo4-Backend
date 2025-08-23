@@ -17,6 +17,14 @@ class CompraOut(BaseModel):
     forma_pagamento: str
 
 
+class CompraPaginationOut(BaseModel):
+    total_in_page: int
+    page: int
+    page_size: int
+    total_pages: int
+    items: list[CompraOut]
+
+
 class CompraIn(BaseModel):
     usuario_id: int
     horario: datetime

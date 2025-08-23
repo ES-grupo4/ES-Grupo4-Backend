@@ -58,7 +58,7 @@ class FuncionarioTestCase(unittest.TestCase):
             "senha": "John123!",
             "email": "john@dois.com",
             "tipo": "funcionario",
-            "data_entrada": "2025-08-04",
+            "data_entrada": "2025-08-22",
         }
 
     def tearDown(self):
@@ -78,6 +78,12 @@ class FuncionarioTestCase(unittest.TestCase):
 
     def busca_funcionario_por_cpf(self, cpf):
         response = client.get(f"/funcionario/?cpf={cpf}", headers=self.auth_headers)
+        return response
+
+    def busca_admin_por_cpf(self, cpf):
+        response = client.get(
+            f"/funcionario/admin/?cpf={cpf}", headers=self.auth_headers
+        )
         return response
 
     def login_funcionario(self):
@@ -287,7 +293,7 @@ class FuncionarioTestCase(unittest.TestCase):
             "nome": funcionario["nome"],  # mantém o nome original
             "email": "novoemail@email.com",
             "tipo": "funcionario",
-            "data_entrada": str(date.today()),
+            "data_entrada": "2025-08-22",
         }
 
         self.assertEqual(response.status_code, 200)
@@ -344,7 +350,7 @@ class FuncionarioTestCase(unittest.TestCase):
             "nome": "Fulaninho Games",
             "email": "novoemail@email.com",
             "tipo": "funcionario",
-            "data_entrada": str(date.today()),
+            "data_entrada": "2025-08-22",
         }
 
         self.assertEqual(response.status_code, 200)
@@ -401,7 +407,7 @@ class FuncionarioTestCase(unittest.TestCase):
             "nome": "Fulaninho Games",
             "email": funcionario["email"],
             "tipo": "funcionario",
-            "data_entrada": str(date.today()),
+            "data_entrada": "2025-08-22",
         }
 
         self.assertEqual(response.status_code, 200)
@@ -458,7 +464,7 @@ class FuncionarioTestCase(unittest.TestCase):
             "nome": "Fulaninho Games",
             "email": "novoemail@email.com",
             "tipo": funcionario["tipo"],
-            "data_entrada": str(date.today()),
+            "data_entrada": "2025-08-22",
         }
 
         self.assertEqual(response.status_code, 200)
@@ -517,7 +523,7 @@ class FuncionarioTestCase(unittest.TestCase):
             "nome": funcionario["nome"],
             "email": funcionario["email"],
             "tipo": funcionario["tipo"],
-            "data_entrada": str(date.today()),
+            "data_entrada": "2025-08-22",
         }
 
         # Verifica status de sucesso
@@ -709,14 +715,12 @@ class FuncionarioTestCase(unittest.TestCase):
 
         # Obtém os funcionários esperados
         funcionario1 = self.busca_funcionario_por_cpf("79920205451").json()["items"][0]
-        funcionario2 = self.busca_funcionario_por_cpf("19896507406").json()["items"][0]
 
         # Obtém a lista de funcionários retornada pelo endpoint
         funcionarios_retornados = response.json().get("items", [])
 
         # Verifica se ambos os funcionários estão na resposta
         self.assertIn(funcionario1, funcionarios_retornados)
-        self.assertIn(funcionario2, funcionarios_retornados)
 
     def test_funcionario_busca_funcionarios_sem_parametros(self):
         self.cria_funcionario()
@@ -729,10 +733,9 @@ class FuncionarioTestCase(unittest.TestCase):
         nomes_retornados = [f["nome"] for f in data["items"]]
 
         self.assertIn(data["items"][0]["nome"], nomes_retornados)
-        self.assertIn(data["items"][1]["nome"], nomes_retornados)
 
         # (Opcional) Validar os metadados de paginação
-        self.assertGreaterEqual(data["total_in_page"], 2)
+        self.assertGreaterEqual(data["total_in_page"], 1)
         self.assertEqual(data["page"], 1)
         self.assertEqual(data["page_size"], 10)
         self.assertGreaterEqual(data["total_pages"], 1)
@@ -1011,158 +1014,45 @@ class FuncionarioTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 401)
 
-    def test_admin_busca_funcionarios_por_tipo_funcionario(self):
-        self.cria_funcionario()
-        response = client.get(
-            "/funcionario/?tipo=funcionario", headers=self.auth_headers
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            self.busca_funcionario_por_cpf("79920205451").json(), response.json()
-        )
-
-    def test_funcionario_busca_funcionarios_por_tipo_funcionario(self):
-        self.cria_funcionario()
-        self.login_funcionario()
-        response = client.get(
-            "/funcionario/?tipo=funcionario", headers=self.auth_headers_funcionario
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            self.busca_funcionario_por_cpf("79920205451").json(), response.json()
-        )
-
-    def test_busca_funcionarios_por_tipo_funcionario_sem_autorizacao(self):
-        self.cria_funcionario()
-        response = client.get(
-            "/funcionario/?tipo=funcionario", headers=self.auth_headers_invalido
-        )
-
-        self.assertEqual(response.status_code, 401)
-
-    def test_admin_busca_funcionarios_por_tipo_admin(self):
-        self.cria_funcionario()
-        response = client.get("/funcionario/?tipo=admin", headers=self.auth_headers)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            self.busca_funcionario_por_cpf("19896507406").json(), response.json()
-        )
-
-    def test_funcionario_busca_funcionarios_por_tipo_admin(self):
-        self.cria_funcionario()
-        self.login_funcionario()
-        response = client.get(
-            "/funcionario/?tipo=admin", headers=self.auth_headers_funcionario
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            self.busca_funcionario_por_cpf("19896507406").json(), response.json()
-        )
-
-    def test_busca_funcionarios_por_tipo_admin_sem_autorizacao(self):
-        self.cria_funcionario()
-        response = client.get(
-            "/funcionario/?tipo=admin", headers=self.auth_headers_invalido
-        )
-
-        self.assertEqual(response.status_code, 401)
-
-    def test_admin_busca_funcionarios_por_tipo_invalido(self):
-        self.cria_funcionario()
-        response = client.get("/funcionario/?tipo=cliente", headers=self.auth_headers)
-
-        self.assertEqual(response.status_code, 422)
-
-        erro = response.json()
-        self.assertIn("detail", erro)
-        self.assertTrue(
-            any(
-                d.get("ctx", {}).get("expected") == "'funcionario' or 'admin'"
-                for d in erro["detail"]
-            ),
-            "O erro não é de tipo inválido",
-        )
-
-    def test_funcionario_busca_funcionarios_por_tipo_invalido(self):
-        self.cria_funcionario()
-        self.login_funcionario()
-        response = client.get(
-            "/funcionario/?tipo=cliente", headers=self.auth_headers_funcionario
-        )
-
-        self.assertEqual(response.status_code, 422)
-
-        erro = response.json()
-        self.assertIn("detail", erro)
-        self.assertTrue(
-            any(
-                d.get("ctx", {}).get("expected") == "'funcionario' or 'admin'"
-                for d in erro["detail"]
-            ),
-            "O erro não é de tipo inválido",
-        )
-
-    def test_busca_funcionarios_por_tipo_invalido_sem_autorizacao(self):
-        self.cria_funcionario()
-        response = client.get(
-            "/funcionario/?tipo=cliente", headers=self.auth_headers_invalido
-        )
-
-        self.assertEqual(response.status_code, 401)
-
     def test_admin_busca_funcionarios_por_data_entrada(self):
         # Cria funcionários
-        self.cria_funcionario()  # CPF: 79920205451
-        self.cria_funcionario(
-            {
-                "cpf": "19896507406",
-                "nome": "Outro Funcionario",
-                "senha": "Senha123!",
-                "email": "outro@funcionario.com",
-                "tipo": "funcionario",
-                "data_entrada": "2025-08-04",
-            }
-        )
+        funcionario_data = {
+            "cpf": "89159073454",
+            "nome": "John Tres",
+            "senha": "John123!",
+            "email": "john@tres.com",
+            "tipo": "funcionario",
+            "data_entrada": "2025-08-22",
+        }
+        self.cria_funcionario(funcionario_data)
 
         # Faz a requisição GET filtrando pela data de entrada
         response = client.get(
-            "/funcionario/?data_entrada=2025-08-04", headers=self.auth_headers
+            "/funcionario/?data_entrada=2025-08-22", headers=self.auth_headers
         )
 
         # Verifica se o status code é 200
         self.assertEqual(response.status_code, 200)
 
         # Obtém os funcionários filtrados pelo CPF
-        funcionario_filtrado = self.busca_funcionario_por_cpf("19896507406").json()[
-            "items"
-        ][0]
-        funcionario_nao_filtrado = self.busca_funcionario_por_cpf("79920205451").json()[
+        funcionario_filtrado = self.busca_funcionario_por_cpf("89159073454").json()[
             "items"
         ][0]
 
         # Verifica se o funcionário correto está na resposta
         funcionarios_retornados = response.json().get("items", [])
         self.assertIn(funcionario_filtrado, funcionarios_retornados)
-        self.assertNotIn(funcionario_nao_filtrado, funcionarios_retornados)
 
     def test_funcionario_busca_funcionarios_por_data_entrada(self):
         self.cria_funcionario()
         self.login_funcionario()
         response = client.get(
-            "/funcionario/?data_entrada=2025-08-04",
+            "/funcionario/?data_entrada=2025-08-22",
             headers=self.auth_headers_funcionario,
         )
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(
-            self.busca_funcionario_por_cpf("19896507406").json()["items"][0],
-            response.json()["items"],
-        )
-        self.assertNotIn(
             self.busca_funcionario_por_cpf("79920205451").json()["items"][0],
             response.json()["items"],
         )
@@ -1312,6 +1202,410 @@ class FuncionarioTestCase(unittest.TestCase):
         data_saida = date.today()
         response = client.get(
             f"/funcionario/?data_saida={data_saida}", headers=self.auth_headers_invalido
+        )
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_busca_admins_sem_funcionarios(self):
+        # Deixa a tabela de funcionarios vazia
+        self.tearDown()
+        response = client.get("/funcionario/admin/", headers=self.auth_headers)
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual([], data["items"])
+        self.assertEqual(0, data["total_in_page"])
+        self.assertEqual(0, data["total_pages"])
+
+    def test_busca_admins_sem_funcionarios_sem_autorizacao(self):
+        # Deixa a tabela de funcionarios vazia
+        self.tearDown()
+        response = client.get("/funcionario/admin/", headers=self.auth_headers_invalido)
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_admin_busca_admins_sem_parametros(self):
+        # Faz a requisição GET sem parâmetros
+        response = client.get("/funcionario/admin/", headers=self.auth_headers)
+
+        # Verifica se o status code é 200
+        self.assertEqual(response.status_code, 200)
+
+        # Obtém o funcionário esperado
+        funcionario = self.busca_admin_por_cpf("19896507406").json()["items"][0]
+
+        # Obtém a lista de funcionários retornada pelo endpoint
+        funcionarios_retornados = response.json().get("items", [])
+
+        # Verifica se o funcionário está na resposta
+        self.assertIn(funcionario, funcionarios_retornados)
+
+    def test_funcionario_busca_admins_sem_parametros(self):
+        self.cria_funcionario()
+        self.login_funcionario()
+        response = client.get(
+            "/funcionario/admin/", headers=self.auth_headers_funcionario
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        nomes_retornados = [f["nome"] for f in data["items"]]
+
+        self.assertIn(data["items"][0]["nome"], nomes_retornados)
+
+        # (Opcional) Validar os metadados de paginação
+        self.assertGreaterEqual(data["total_in_page"], 1)
+        self.assertEqual(data["page"], 1)
+        self.assertEqual(data["page_size"], 10)
+        self.assertGreaterEqual(data["total_pages"], 1)
+
+    def test_busca_admins_sem_parametros_sem_autorizacao(self):
+        self.cria_funcionario()
+        response = client.get("/funcionario/admin/", headers=self.auth_headers_invalido)
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_admin_busca_admins_por_id(self):
+        self.cria_funcionario()
+        funcionario = self.busca_admin_por_cpf("19896507406").json()["items"][0]
+        response = client.get(
+            f"/funcionario/admin/?id={funcionario['id']}", headers=self.auth_headers
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            self.busca_admin_por_cpf("19896507406").json()["items"],
+            response.json()["items"],
+        )
+
+    def test_funcionario_busca_admins_por_id(self):
+        self.cria_funcionario()
+        self.login_funcionario()
+        funcionario = self.busca_admin_por_cpf("19896507406").json()["items"][0]
+
+        response = client.get(
+            f"/funcionario/admin/?id={funcionario['id']}",
+            headers=self.auth_headers_funcionario,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            self.busca_admin_por_cpf("19896507406").json()["items"],
+            response.json()["items"],
+        )
+
+    def test_busca_admins_por_id_sem_autorizacao(self):
+        self.cria_funcionario()
+        funcionario = self.busca_admin_por_cpf("19896507406").json()["items"][0]
+
+        response = client.get(
+            f"/funcionario/admin/?id={funcionario['id']}",
+            headers=self.auth_headers_invalido,
+        )
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_admin_busca_admins_por_id_inexistente(self):
+        self.cria_funcionario()
+        response = client.get("/funcionario/admin/?id=9999", headers=self.auth_headers)
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual([], data["items"])
+        self.assertEqual(0, data["total_in_page"])
+        self.assertEqual(0, data["total_pages"])
+
+    def test_funcionario_busca_admins_por_id_inexistente(self):
+        self.cria_funcionario()
+        self.login_funcionario()
+        response = client.get(
+            "/funcionario/admin/?id=9999", headers=self.auth_headers_funcionario
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual([], data["items"])
+        self.assertEqual(0, data["total_in_page"])
+        self.assertEqual(0, data["total_pages"])
+
+    def test_busca_admins_por_id_inexistente_sem_autorizacao(self):
+        self.cria_funcionario()
+        response = client.get(
+            "/funcionario/admin/?id=9999", headers=self.auth_headers_invalido
+        )
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_admin_busca_admins_por_cpf(self):
+        self.cria_funcionario()
+        response = client.get(
+            "/funcionario/admin/?cpf=19896507406", headers=self.auth_headers
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            self.busca_admin_por_cpf("19896507406").json(), response.json()
+        )
+
+    def test_funcionario_busca_admins_por_cpf(self):
+        self.cria_funcionario()
+        self.login_funcionario()
+        response = client.get(
+            "/funcionario/admin/?cpf=19896507406", headers=self.auth_headers_funcionario
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            self.busca_admin_por_cpf("19896507406").json()["items"],
+            response.json()["items"],
+        )
+
+    def test_busca_admins_por_cpf_sem_autorizacao(self):
+        self.cria_funcionario()
+        response = client.get(
+            "/funcionario/admin/?cpf=19896507406", headers=self.auth_headers_invalido
+        )
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_admin_busca_admins_por_cpf_inexistente(self):
+        self.cria_funcionario()
+        response = client.get(
+            "/funcionario/admin/?cpf=12345678910", headers=self.auth_headers
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual([], data["items"])
+        self.assertEqual(0, data["total_in_page"])
+        self.assertEqual(0, data["total_pages"])
+
+    def test_funcionario_busca_admins_por_cpf_inexistente(self):
+        self.cria_funcionario()
+        self.login_funcionario()
+        response = client.get(
+            "/funcionario/admin/?cpf=12345678910", headers=self.auth_headers_funcionario
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual([], data["items"])
+        self.assertEqual(0, data["total_in_page"])
+        self.assertEqual(0, data["total_pages"])
+
+    def test_busca_admins_por_cpf_inexistente_sem_autorizacao(self):
+        self.cria_funcionario()
+        response = client.get(
+            "/funcionario/admin/?cpf=12345678910", headers=self.auth_headers_invalido
+        )
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_admin_busca_admins_por_nome(self):
+        self.cria_funcionario()
+        response = client.get(
+            "/funcionario/admin/?nome=John Doe", headers=self.auth_headers
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            self.busca_admin_por_cpf("19896507406").json(), response.json()
+        )
+
+    def test_funcionario_busca_admins_por_nome(self):
+        self.cria_funcionario()
+        self.login_funcionario()
+        response = client.get(
+            "/funcionario/admin/?nome=John Doe", headers=self.auth_headers_funcionario
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            self.busca_admin_por_cpf("19896507406").json(), response.json()
+        )
+
+    def test_busca_admins_por_nome_sem_autorizacao(self):
+        self.cria_funcionario()
+        response = client.get(
+            "/funcionario/admin/?nome=John Doe", headers=self.auth_headers_invalido
+        )
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_admin_busca_admins_por_nome_inexistente(self):
+        self.cria_funcionario()
+        response = client.get(
+            "/funcionario/admin/?nome=Joao", headers=self.auth_headers
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual([], data["items"])
+        self.assertEqual(0, data["total_in_page"])
+        self.assertEqual(0, data["total_pages"])
+
+    def test_funcionario_busca_admins_por_nome_inexistente(self):
+        self.cria_funcionario()
+        self.login_funcionario()
+        response = client.get(
+            "/funcionario/admin/?nome=Joao", headers=self.auth_headers_funcionario
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual([], data["items"])
+        self.assertEqual(0, data["total_in_page"])
+        self.assertEqual(0, data["total_pages"])
+
+    def test_busca_admins_por_nome_inexistente_sem_autorizacao(self):
+        self.cria_funcionario()
+        response = client.get(
+            "/funcionario/admin/?nome=Joao", headers=self.auth_headers_invalido
+        )
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_admin_busca_admins_por_email(self):
+        self.cria_funcionario()
+        response = client.get(
+            "/funcionario/admin/?email=john@doe.com", headers=self.auth_headers
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            self.busca_admin_por_cpf("19896507406").json(), response.json()
+        )
+
+    def test_funcionario_busca_admins_por_email(self):
+        self.cria_funcionario()
+        self.login_funcionario()
+        response = client.get(
+            "/funcionario/admin/?email=john@doe.com",
+            headers=self.auth_headers_funcionario,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            self.busca_admin_por_cpf("19896507406").json(), response.json()
+        )
+
+    def test_busca_admins_por_email_sem_autorizacao(self):
+        self.cria_funcionario()
+        response = client.get(
+            "/funcionario/admin/?email=john@doe.com", headers=self.auth_headers_invalido
+        )
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_admin_busca_admins_por_email_inexistente(self):
+        self.cria_funcionario()
+        response = client.get(
+            "/funcionario/admin/?email=john@tres.com", headers=self.auth_headers
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual([], data["items"])
+        self.assertEqual(0, data["total_in_page"])
+        self.assertEqual(0, data["total_pages"])
+
+    def test_funcionario_busca_admins_por_email_inexistente(self):
+        self.cria_funcionario()
+        self.login_funcionario()
+        response = client.get(
+            "/funcionario/admin/?email=john@tres.com",
+            headers=self.auth_headers_funcionario,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual([], data["items"])
+        self.assertEqual(0, data["total_in_page"])
+        self.assertEqual(0, data["total_pages"])
+
+    def test_busca_admins_por_email_inexistente_sem_autorizacao(self):
+        self.cria_funcionario()
+        self.login_funcionario()
+        response = client.get(
+            "/funcionario/admin/?email=john@tres.com",
+            headers=self.auth_headers_invalido,
+        )
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_admin_busca_admins_por_data_entrada(self):
+        # Faz a requisição GET filtrando pela data de entrada
+        response = client.get(
+            "/funcionario/admin/?data_entrada=2025-08-04", headers=self.auth_headers
+        )
+
+        # Verifica se o status code é 200
+        self.assertEqual(response.status_code, 200)
+
+        # Obtém o funcionário filtrado pela data de entrada
+        funcionario_filtrado = self.busca_admin_por_cpf("19896507406").json()["items"][
+            0
+        ]
+
+        # Verifica se o funcionário correto está na resposta
+        funcionarios_retornados = response.json().get("items", [])
+        self.assertIn(funcionario_filtrado, funcionarios_retornados)
+
+    def test_funcionario_busca_admins_por_data_entrada(self):
+        self.cria_funcionario()
+        self.login_funcionario()
+        response = client.get(
+            "/funcionario/admin/?data_entrada=2025-08-04",
+            headers=self.auth_headers_funcionario,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            self.busca_admin_por_cpf("19896507406").json()["items"][0],
+            response.json()["items"],
+        )
+
+    def test_busca_admins_por_data_entrada_sem_autorizacao(self):
+        self.cria_funcionario()
+        response = client.get(
+            "/funcionario/admin/?data_entrada=2025-08-04",
+            headers=self.auth_headers_invalido,
+        )
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_admin_busca_admins_por_data_entrada_inexistente(self):
+        self.cria_funcionario()
+        response = client.get(
+            "/funcionario/admin/?data_entrada=2005-02-13", headers=self.auth_headers
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual([], data["items"])
+        self.assertEqual(0, data["total_in_page"])
+        self.assertEqual(0, data["total_pages"])
+
+    def test_funcionario_busca_admin_por_data_entrada_inexistente(self):
+        self.cria_funcionario()
+        self.login_funcionario()
+        response = client.get(
+            "/funcionario/admin/?data_entrada=2005-02-13",
+            headers=self.auth_headers_funcionario,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual([], data["items"])
+        self.assertEqual(0, data["total_in_page"])
+        self.assertEqual(0, data["total_pages"])
+
+    def test_busca_admins_por_data_entrada_inexistente_sem_autorizacao(self):
+        self.cria_funcionario()
+        response = client.get(
+            "/funcionario/admin/?data_entrada=2005-02-13",
+            headers=self.auth_headers_invalido,
         )
 
         self.assertEqual(response.status_code, 401)
