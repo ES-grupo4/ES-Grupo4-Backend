@@ -58,7 +58,7 @@ class FuncionarioTestCase(unittest.TestCase):
             "senha": "John123!",
             "email": "john@dois.com",
             "tipo": "funcionario",
-            "data_entrada": "2025-08-04",
+            "data_entrada": "2025-08-22",
         }
 
     def tearDown(self):
