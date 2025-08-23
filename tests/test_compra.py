@@ -223,6 +223,12 @@ class CompraTestCase(unittest.TestCase):
         compras = [
             {
                 "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2025, 4, 12, 10, 50).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "pix",
+            },
+            {
+                "usuario_id": self.cliente.usuario_id,
                 "horario": datetime(2025, 6, 20, 11, 20).isoformat(),
                 "local": "ufcg",
                 "forma_pagamento": "dinheiro",
@@ -245,12 +251,18 @@ class CompraTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         info = response.json()
-        self.assertEqual(len(response.json()["items"]), 2)
+        self.assertEqual(len(info["items"]), 2)
         for c in info:
             self.assertEqual(info["items"][0]["forma_pagamento"], "pix")
 
     def test_filtra_compras_atributo_cliente(self):
         compras = [
+            {
+                "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2025, 4, 12, 10, 50).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "pix",
+            },
             {
                 "usuario_id": self.cliente.usuario_id,
                 "horario": datetime(2025, 6, 20, 11, 20).isoformat(),
@@ -269,7 +281,9 @@ class CompraTestCase(unittest.TestCase):
             self.client.post("/compra/", json=i, headers=self.auth_headers)
 
         response = self.client.get(
-            "/compra/", params={"nome": "Fulano", "page": 1, "page_size": 10}
+            "/compra/",
+            params={"comprador": "Fulano", "page": 1, "page_size": 10},
+            headers=self.auth_headers,
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json()["items"]), 3)
