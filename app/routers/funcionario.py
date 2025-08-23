@@ -57,7 +57,7 @@ def cadastra_funcionario(funcionario: FuncionarioIn, db: conexao_bd):
         senha=gerar_hash(funcionario.senha),
         email=funcionario.email,
         tipo=FuncionarioTipo(funcionario.tipo),
-        data_entrada=date.today(),
+        data_entrada=funcionario.data_entrada,
     )
 
     db.add(usuario)
