@@ -198,25 +198,35 @@ class CompraTestCase(unittest.TestCase):
         self.db.add(compra)
         self.db.commit()
 
-        response = client.get("/compra/", headers=self.auth_headers)
+        response = client.get(
+            "/compra/", params={"page": 1, "page_size": 10}, headers=self.auth_headers
+        )
         self.assertEqual(response.status_code, 200)
         info = response.json()
-        self.assertIsInstance(info, list)
-        horarios = [compra["horario"] for compra in info]
-        self.assertIn("2025-04-12T10:50:00", horarios)
+        self.assertEqual(info["items"][0]["forma_pagamento"], "pix")
+        self.assertEqual(info["total_pages"], 1)
+        self.assertEqual(info["page"], 1)
+        self.assertEqual(info["page_size"], 10)
 
     def test_busca_compras_not_found(self):
         self.db.query(Compra).delete()
         self.db.commit()
         self.tearDown()
-        response = self.client.get("/compra/", headers=self.auth_headers)
-        self.assertEqual(response.status_code, 404)
-        assert response.json() == {
-            "detail": "Nenhuma compra encontrada com os filtros fornecidos"
-        }
+        response = self.client.get(
+            "/compra/", params={"page": 1, "page_size": 10}, headers=self.auth_headers
+        )
+        self.assertEqual(response.status_code, 200)
+        info = response.json()
+        self.assertEqual(info["items"], [])
 
     def test_filtra_compras(self):
         compras = [
+            {
+                "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2025, 4, 12, 10, 50).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "pix",
+            },
             {
                 "usuario_id": self.cliente.usuario_id,
                 "horario": datetime(2025, 6, 20, 11, 20).isoformat(),
@@ -235,33 +245,69 @@ class CompraTestCase(unittest.TestCase):
             self.client.post("/compra/", json=i, headers=self.auth_headers)
 
         response = self.client.get(
-            "/compra/", params={"forma_pagamento": "pix"}, headers=self.auth_headers
+            "/compra/",
+            params={"forma_pagamento": "pix", "page": 1, "page_size": 10},
+            headers=self.auth_headers,
         )
         self.assertEqual(response.status_code, 200)
         info = response.json()
-        self.assertEqual(len(info), 1)
-        self.assertEqual(info[0]["horario"], "2023-04-13T12:00:00")
+        self.assertEqual(len(info["items"]), 2)
+        for c in info:
+            self.assertEqual(info["items"][0]["forma_pagamento"], "pix")
+
+    def test_filtra_compras_atributo_cliente(self):
+        compras = [
+            {
+                "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2025, 4, 12, 10, 50).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "pix",
+            },
+            {
+                "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2025, 6, 20, 11, 20).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "dinheiro",
+            },
+            {
+                "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2023, 4, 13, 12, 00, 0).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "pix",
+            },
+        ]
+
+        for i in compras:
+            self.client.post("/compra/", json=i, headers=self.auth_headers)
+
+        response = self.client.get(
+            "/compra/",
+            params={"comprador": "Fulano", "page": 1, "page_size": 10},
+            headers=self.auth_headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()["items"]), 3)
 
     def test_filtra_compras_not_found(self):
         response = self.client.get(
             "/compra/",
-            params={"forma_pagamento": "dinheiro"},
+            params={"forma_pagamento": "dinheiro", "page": 1, "page_size": 1},
             headers=self.auth_headers,
         )
-        self.assertEqual(response.status_code, 404)
-        assert response.json() == {
-            "detail": "Nenhuma compra encontrada com os filtros fornecidos"
-        }
+        self.assertEqual(response.status_code, 200)
+        info = response.json()
+        self.assertEqual(info["items"], [])
 
     def test_filtra_compras_not_found_bd_vazio(self):
         self.db.query(Compra).delete()
         self.db.commit()
         self.tearDown()
-        response = self.client.get("/compra/", headers=self.auth_headers)
-        self.assertEqual(response.status_code, 404)
-        assert response.json() == {
-            "detail": "Nenhuma compra encontrada com os filtros fornecidos"
-        }
+        response = self.client.get(
+            "/compra/", params={"page": 1, "page_size": 1}, headers=self.auth_headers
+        )
+        self.assertEqual(response.status_code, 200)
+        info = response.json()
+        self.assertEqual(info["items"], [])
 
 
 if __name__ == "__main__":
