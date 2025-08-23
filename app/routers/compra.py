@@ -106,11 +106,7 @@ def filtra_compra(
         10, ge=1, le=100, description="Quantidade de compras por página (padrão 10)"
     ),
 ):
-    query = (
-        select(Compra)
-        .select_from(Compra)
-        .join(Cliente, Compra.usuario_id == Cliente.usuario_id)
-    )
+    query = select(Compra).join(Cliente, Compra.usuario_id == Cliente.usuario_id)
 
     if horario is not None:
         query = query.where(Compra.horario == horario)
