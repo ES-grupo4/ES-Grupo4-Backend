@@ -10,7 +10,7 @@ def guarda_acao(
         HistoricoAcoes(
             usuario_id_ator=id_ator,
             usuario_id_alvo=id_alvo,
-            informacoes_acao=info_adicional,  # Mudar esse nome mds
+            info=info_adicional,  # Mudar esse nome mds
             data=date.today(),
         )
     )

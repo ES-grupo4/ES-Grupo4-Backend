@@ -116,7 +116,7 @@ class HistoricoAcoes(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     usuario_id_ator: Mapped[int] = mapped_column(ForeignKey(Funcionario.usuario_id))
     usuario_id_alvo: Mapped[int] = mapped_column(ForeignKey(Cliente.usuario_id))
-    informacoes_acao: Mapped[dict] = mapped_column(JSON)
+    info: Mapped[dict] = mapped_column(JSON)
     data: Mapped[datetime] = mapped_column(DateTime)
 
 
