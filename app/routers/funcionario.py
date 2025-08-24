@@ -1,8 +1,11 @@
-from fastapi import APIRouter, HTTPException, Query, status
+from typing import Annotated
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select, func
 from math import ceil
 from pydantic import EmailStr
 from datetime import date
+
+from app.core.historico_acoes import AcoesEnum, guarda_acao
 
 from ..models.models import Funcionario, FuncionarioTipo
 from ..models.db_setup import conexao_bd
@@ -10,7 +13,6 @@ from ..schemas.funcionario import (
     FuncionarioEdit,
     FuncionarioOut,
     FuncionarioIn,
-    tipoFuncionarioEnum,
     FuncionarioPaginationOut,
 )
 from ..core.permissoes import requer_permissao
@@ -24,7 +26,10 @@ funcionarios_router = APIRouter(prefix="/funcionario", tags=["Funcionário"])
 router = funcionarios_router
 
 
-def valida_funcionario(funcionario: FuncionarioIn, db: conexao_bd):
+def valida_funcionario(
+    funcionario: FuncionarioIn,
+    db: conexao_bd,
+):
     funcionario.cpf = valida_e_retorna_cpf(funcionario.cpf)
 
     if gerar_hash(funcionario.cpf) in db.scalars(select(Funcionario.cpf_hash)):
@@ -45,11 +50,13 @@ def valida_funcionario(funcionario: FuncionarioIn, db: conexao_bd):
     "/",
     summary="Cria um funcionário no sistema",
     tags=["Funcionário"],
-    dependencies=[requer_permissao("admin")],
 )
-def cadastra_funcionario(funcionario: FuncionarioIn, db: conexao_bd):
+def cadastra_funcionario(
+    ator: Annotated[dict, Depends(requer_permissao("admin"))],
+    funcionario: FuncionarioIn,
+    db: conexao_bd,
+):
     funcionario = valida_funcionario(funcionario, db)
-
     usuario = Funcionario(
         cpf_cript=criptografa_cpf(funcionario.cpf),
         cpf_hash=gerar_hash(funcionario.cpf),
@@ -61,6 +68,8 @@ def cadastra_funcionario(funcionario: FuncionarioIn, db: conexao_bd):
     )
 
     db.add(usuario)
+    db.flush()
+    guarda_acao(db, AcoesEnum.CADASTRAR_FUNCIONARIO, ator["cpf"], usuario.id)
     return {"message": "Funcionário cadastrado com sucesso"}
 
 
@@ -69,9 +78,13 @@ def cadastra_funcionario(funcionario: FuncionarioIn, db: conexao_bd):
     response_model=FuncionarioOut,
     summary="Atualiza os dados de um funcionário",
     tags=["Funcionário"],
-    dependencies=[requer_permissao("admin")],
 )
-def atualiza_funcionario(id: int, funcionario: FuncionarioEdit, db: conexao_bd):
+def atualiza_funcionario(
+    ator: Annotated[dict, Depends(requer_permissao("admin"))],
+    id: int,
+    funcionario: FuncionarioEdit,
+    db: conexao_bd,
+):
     funcionario_existente = db.scalar(select(Funcionario).where(Funcionario.id == id))
 
     if not funcionario_existente:
@@ -86,8 +99,9 @@ def atualiza_funcionario(id: int, funcionario: FuncionarioEdit, db: conexao_bd):
             funcionario_existente.cpf_hash = gerar_hash(valor)
         setattr(funcionario_existente, campo, valor)
 
-    db.commit()
-    db.refresh(funcionario_existente)
+    guarda_acao(
+        db, AcoesEnum.ATUALIZAR_FUNCIONARIO, ator["cpf"], funcionario_existente.id
+    )
     return funcionario_existente
 
 
@@ -96,7 +110,7 @@ def atualiza_funcionario(id: int, funcionario: FuncionarioEdit, db: conexao_bd):
     summary="Retorna todos os funcionários cadastrados",
     tags=["Funcionário"],
     response_model=FuncionarioPaginationOut,
-    dependencies=[requer_permissao("funcionario", "admin")],
+    dependencies=[Depends(requer_permissao("funcionario", "admin"))],
 )
 def busca_funcionarios(
     db: conexao_bd,
@@ -151,7 +165,7 @@ def busca_funcionarios(
     summary="Retorna todos os administradores cadastrados",
     tags=["Funcionário"],
     response_model=FuncionarioPaginationOut,
-    dependencies=[requer_permissao("funcionario", "admin")],
+    dependencies=[Depends(requer_permissao("funcionario", "admin"))],
 )
 def busca_admins(
     db: conexao_bd,
@@ -205,9 +219,10 @@ def busca_admins(
     "/",
     summary="Remove um funcionário pelo CPF",
     tags=["Funcionário"],
-    dependencies=[requer_permissao("admin")],
 )
-def deleta_funcionario(db: conexao_bd, cpf: str):
+def deleta_funcionario(
+    ator: Annotated[dict, Depends(requer_permissao("admin"))], db: conexao_bd, cpf: str
+):
     cpf = valida_e_retorna_cpf(cpf)
     funcionario = db.scalar(
         select(Funcionario).where(Funcionario.cpf_hash == gerar_hash(cpf))
@@ -218,7 +233,7 @@ def deleta_funcionario(db: conexao_bd, cpf: str):
         )
 
     db.delete(funcionario)
-    db.commit()
+    guarda_acao(db, AcoesEnum.DELETAR_FUNCIONARIO, ator["cpf"], funcionario.id)
     return {"message": "Funcionário deletado com sucesso"}
 
 
@@ -226,9 +241,13 @@ def deleta_funcionario(db: conexao_bd, cpf: str):
     "/{cpf}/desativar",
     summary="Desativa um funcionário pelo CPF (LGPD)",
     tags=["Funcionário"],
-    dependencies=[requer_permissao("admin")],
 )
-def desativa_funcionario(db: conexao_bd, cpf: str, data_saida: date):
+def desativa_funcionario(
+    ator: Annotated[dict, Depends(requer_permissao("admin"))],
+    db: conexao_bd,
+    cpf: str,
+    data_saida: date,
+):
     cpf = valida_e_retorna_cpf(cpf)
 
     funcionario = db.scalar(
@@ -247,6 +266,7 @@ def desativa_funcionario(db: conexao_bd, cpf: str, data_saida: date):
 
     funcionario.email = None
     funcionario.data_saida = data_saida
-    db.commit()
+    db.flush()
+    guarda_acao(db, AcoesEnum.DELETAR_FUNCIONARIO, ator["cpf"], funcionario.id)
 
     return {"message": "Funcionário desativado com sucesso"}

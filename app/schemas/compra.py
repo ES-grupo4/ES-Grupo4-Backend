@@ -16,6 +16,9 @@ class CompraOut(BaseModel):
     local: str
     forma_pagamento: str
 
+    class Config:
+        from_attributes = True
+
 
 class CompraPaginationOut(BaseModel):
     total_in_page: int

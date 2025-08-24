@@ -7,7 +7,9 @@ from .routers.compra import compra_router
 
 from fastapi.middleware.cors import CORSMiddleware
 from .routers.informacoes_gerais import informacoes_gerais_router
+
 from .routers.cliente import cliente_router
+from .routers.historico_acoes import acoes_router
 from .models.db_setup import engine
 from .models.models import Funcionario
 
@@ -31,7 +33,6 @@ async def setUpAdmin(app: FastAPI):
         "tipo": "admin",
         "data_entrada": date(2025, 8, 4),
     }
-
     admin_existente = (
         db.query(Funcionario).filter_by(cpf_hash=admin_data["cpf_hash"]).first()
     )
@@ -63,3 +64,4 @@ app.include_router(informacoes_gerais_router)
 app.include_router(auth_router)
 app.include_router(compra_router)
 app.include_router(cliente_router)
+app.include_router(acoes_router)
