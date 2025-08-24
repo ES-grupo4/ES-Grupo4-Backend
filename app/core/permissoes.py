@@ -8,4 +8,4 @@ def requer_permissao(*tipo_permitidos: str):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
         return usuario_atual
 
-    return Depends(dependency)
+    return dependency
