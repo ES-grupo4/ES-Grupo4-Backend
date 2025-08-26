@@ -41,10 +41,10 @@ class ClienteIn(BaseModel):
 
 class ClienteOut(BaseModel):
     id: int
-    nome: str
-    cpf: str = Field(..., description="CPF descriptografado")
+    nome: str | None
+    cpf: str | None = Field(..., description="CPF descriptografado")
     subtipo: str
-    matricula: str
+    matricula: str | None
     tipo: ClienteEnum
     graduando: bool
     pos_graduando: bool
