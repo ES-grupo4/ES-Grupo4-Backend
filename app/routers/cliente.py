@@ -163,6 +163,28 @@ def remover_cliente(
     db.flush()
     guarda_acao(db, AcoesEnum.DELETAR_CLIENTE, ator["cpf"], cliente.id)
 
+@cliente_router.delete(
+    "id/{id}",
+    summary="Remove um cliente pelo ID",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def remover_cliente_id(
+    id: int,
+    ator: Annotated[dict, Depends(requer_permissao("funcionario", "admin"))],
+    db: conexao_bd,
+):
+    """
+    Remove um cliente do sistema a partir do ID.
+    """
+    cliente = db.scalar(select(Cliente).where(Cliente.id == id))
+    if not cliente:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Cliente não encontrado",
+        )
+    db.delete(cliente)
+    db.flush()
+    guarda_acao(db, AcoesEnum.DELETAR_CLIENTE, ator["cpf"], cliente.id)
 
 @cliente_router.put(
     "/{cpf}",
@@ -241,7 +263,7 @@ def buscar_cliente(cpf: str, db: conexao_bd):
 
 
 @cliente_router.get(
-    "/{id}",
+    "/id/{id}",
     summary="Busca um cliente pelo ID",
     response_model=ClienteOut,
 )
