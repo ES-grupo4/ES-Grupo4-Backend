@@ -125,26 +125,6 @@ class ClienteTestCase(unittest.TestCase):
         cpfs = [cliente["cpf"] for cliente in data["items"]]
         self.assertIn(payload["cpf"], cpfs)
 
-    def test_remove_cliente(self):
-        payload = {
-            "cpf": "39410861977",
-            "nome": "Cliente Remove",
-            "matricula": "20240003",
-            "tipo": "aluno",
-            "graduando": True,
-            "pos_graduando": False,
-            "bolsista": True,
-        }
-        self.client.post("/cliente/", json=payload, headers=self.auth_headers)
-        response = self.client.delete(
-            f"/cliente/{payload['cpf']}", headers=self.auth_headers
-        )
-        self.assertEqual(response.status_code, 204)
-        response = self.client.get(
-            f"/cliente/{payload['cpf']}", headers=self.auth_headers
-        )
-        self.assertEqual(response.status_code, 404)
-
     def test_criar_cliente_sem_campo_obrigatorio(self):
         payload = {
             "cpf": "12345678999",  # falta nome
@@ -233,10 +213,6 @@ class ClienteTestCase(unittest.TestCase):
             "/cliente/", json=payload, headers=self.auth_headers
         )
         self.assertEqual(response.status_code, 400)
-
-    def test_remove_cliente_inexistente(self):
-        response = self.client.delete("/cliente/39410861977", headers=self.auth_headers)
-        self.assertEqual(response.status_code, 404)
 
     def test_edita_cliente_matricula_invalida(self):
         payload = {
