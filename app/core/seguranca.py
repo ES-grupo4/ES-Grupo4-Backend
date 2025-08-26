@@ -57,13 +57,14 @@ async def get_usuario_atual(
         payload = jwt.decode(token, CHAVE_SECRETA, ALGORITMO)
         cpf: str | None = payload.get("sub")
         tipo: str | None = payload.get("tipo")
-        if cpf is None or tipo is None:
+        id_funcionario: int | None = payload.get("id")
+        if cpf is None or tipo is None or id_funcionario is None:
             raise credenciais_exception
 
     except JWTError:
         raise credenciais_exception
 
-    return {"cpf": cpf, "tipo": tipo}
+    return {"id": id_funcionario, "cpf": cpf, "tipo": tipo}
 
 
 # Sessão de geração e confirmação de token - Fim
