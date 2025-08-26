@@ -1,9 +1,12 @@
 import io
 from math import ceil
-from fastapi import APIRouter, File, HTTPException, UploadFile, status, Query
+from typing import Annotated
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status, Query
 from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 import polars as pl
+
+from app.core.historico_acoes import AcoesEnum, guarda_acao
 from ..models.db_setup import conexao_bd
 from ..models.models import Cliente
 from ..core.seguranca import gerar_hash, criptografa_cpf
@@ -20,7 +23,6 @@ from ..utils.validacao import valida_e_retorna_cpf
 cliente_router = APIRouter(
     prefix="/cliente",
     tags=["Cliente"],
-    dependencies=[requer_permissao("funcionario", "admin")],
 )
 
 
@@ -30,7 +32,11 @@ cliente_router = APIRouter(
     response_model=ClienteOut,
     status_code=status.HTTP_201_CREATED,
 )
-def cria_cliente(cliente: ClienteIn, db: conexao_bd):
+def cria_cliente(
+    cliente: ClienteIn,
+    ator: Annotated[dict, Depends(requer_permissao("funcionario", "admin"))],
+    db: conexao_bd,
+):
     """
     Cria um cliente no sistema.
     """
@@ -47,14 +53,15 @@ def cria_cliente(cliente: ClienteIn, db: conexao_bd):
     )
     db.add(novo)
     try:
-        db.commit()
+        db.flush()
     except IntegrityError:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cliente com esse CPF já existe.",
         )
-    db.refresh(novo)
+    # db.refresh(novo)
+    guarda_acao(db, AcoesEnum.CADASTRAR_CLIENTE, ator["cpf"], novo.id)
     return ClienteOut.from_orm(novo)
 
 
@@ -62,6 +69,7 @@ def cria_cliente(cliente: ClienteIn, db: conexao_bd):
     "/",
     summary="Pega todos os clientes (com filtros opcionais)",
     response_model=ClientePaginationOut,
+    dependencies=[Depends(requer_permissao("funcionario", "admin"))],
 )
 def listar_clientes(
     db: conexao_bd,
@@ -126,16 +134,16 @@ def listar_clientes(
     }
 
 
-# clientes = db.scalars(query).all()
-# return [ClienteOut.from_orm(cliente) for cliente in clientes]
-
-
 @cliente_router.delete(
     "/{cpf}",
     summary="Remove um cliente pelo CPF",
     status_code=status.HTTP_204_NO_CONTENT,
 )
-def remover_cliente(cpf: str, db: conexao_bd):
+def remover_cliente(
+    cpf: str,
+    ator: Annotated[dict, Depends(requer_permissao("funcionario", "admin"))],
+    db: conexao_bd,
+):
     """
     Remove um cliente do sistema a partir do CPF.
     """
@@ -147,7 +155,8 @@ def remover_cliente(cpf: str, db: conexao_bd):
             detail="Cliente não encontrado",
         )
     db.delete(cliente)
-    db.commit()
+    db.flush()
+    guarda_acao(db, AcoesEnum.DELETAR_CLIENTE, ator["cpf"], cliente.id)
 
 
 @cliente_router.put(
@@ -155,7 +164,12 @@ def remover_cliente(cpf: str, db: conexao_bd):
     summary="Edita os dados de um cliente pelo CPF",
     response_model=ClienteOut,
 )
-def editar_cliente(cpf: str, dados: ClienteEdit, db: conexao_bd):
+def editar_cliente(
+    cpf: str,
+    dados: ClienteEdit,
+    ator: Annotated[dict, Depends(requer_permissao("funcionario", "admin"))],
+    db: conexao_bd,
+):
     """
     Edita os dados de um cliente existente, exceto CPF, ID e tipo.
     """
@@ -168,8 +182,9 @@ def editar_cliente(cpf: str, dados: ClienteEdit, db: conexao_bd):
         )
     for campo, valor in dados.model_dump(exclude_unset=True).items():
         setattr(cliente, campo, valor)
-    db.commit()
+    db.flush()
     db.refresh(cliente)
+    guarda_acao(db, AcoesEnum.ATUALIZAR_CLIENTE, ator["cpf"], cliente.id)
     return ClienteOut.from_orm(cliente)
 
 
@@ -196,7 +211,11 @@ def buscar_cliente(cpf: str, db: conexao_bd):
     "/upload-csv/",
     summary="Cadastra clientes no sistema por meio de CSV",
 )
-async def upload_clientes_csv(db: conexao_bd, arquivo: UploadFile = File(...)):
+async def upload_clientes_csv(
+    db: conexao_bd,
+    ator: Annotated[dict, Depends(requer_permissao("funcionario", "admin"))],
+    arquivo: UploadFile = File(...),
+):
     """
     Realiza a inserção em massa de clientes a partir de um arquivo CSV.
     O CSV deve conter colunas: cpf,nome,matricula,tipo,graduando,pos_graduando,bolsista
@@ -231,6 +250,7 @@ async def upload_clientes_csv(db: conexao_bd, arquivo: UploadFile = File(...)):
         )
 
     inseridos = 0
+    clientes = []
     for linha in tabela_csv.iter_rows(named=True):
         try:
             cliente = Cliente(
@@ -244,11 +264,19 @@ async def upload_clientes_csv(db: conexao_bd, arquivo: UploadFile = File(...)):
                 bolsista=bool(linha["bolsista"]),
             )
             inseridos += 1
+            clientes.append(cliente)
             db.add(cliente)
-            db.commit()
+            db.flush()
         except Exception as e:
             print(f"Erro ao cadastrar {linha.get('cpf')}: {e}")
             db.rollback()
             continue
+    for cliente in clientes:
+        guarda_acao(
+            db,
+            AcoesEnum.CADASTRAR_CLIENTE,
+            ator["cpf"],
+            cliente.id,
+        )
 
     return {"message": f"{inseridos} cliente(s) cadastrado(s) com sucesso."}

@@ -1,8 +1,11 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Query, status
+from typing import Annotated
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Query, status
 import io
 from math import ceil
 import polars as pl
 from sqlalchemy import select, func
+
+from app.core.historico_acoes import AcoesEnum, guarda_acao
 from ..models.db_setup import conexao_bd
 from ..models.models import Compra
 from ..models.models import Cliente
@@ -13,7 +16,6 @@ from datetime import datetime
 compra_router = APIRouter(
     prefix="/compra",
     tags=["Compra"],
-    dependencies=[requer_permissao("funcionario", "admin")],
 )
 router = compra_router
 
@@ -23,7 +25,11 @@ router = compra_router
     summary="Cadastra uma compra no sistema",
     status_code=status.HTTP_201_CREATED,
 )
-def cadastra_compra(compra: CompraIn, db: conexao_bd):
+def cadastra_compra(
+    compra: CompraIn,
+    ator: Annotated[dict, Depends(requer_permissao("funcionario", "admin"))],
+    db: conexao_bd,
+):
     nova_compra = Compra(
         usuario_id=compra.usuario_id,
         horario=compra.horario,
@@ -31,7 +37,13 @@ def cadastra_compra(compra: CompraIn, db: conexao_bd):
         forma_pagamento=compra.forma_pagamento,
     )
     db.add(nova_compra)
-    db.commit()
+    db.flush()
+    guarda_acao(
+        db,
+        AcoesEnum.CADASTRAR_COMPRA,
+        ator["cpf"],
+        info_adicional=CompraOut.model_validate(nova_compra).model_dump_json(),
+    )
     return {"message": "Compra cadastrada com sucesso"}
 
 
@@ -39,7 +51,11 @@ def cadastra_compra(compra: CompraIn, db: conexao_bd):
     "/csv",
     summary="Cadastra uma compra no sistema por meio de csv",
 )
-async def cadastra_compra_csv(db: conexao_bd, arquivo: UploadFile = File(...)):
+async def cadastra_compra_csv(
+    db: conexao_bd,
+    ator: Annotated[dict, Depends(requer_permissao("funcionario", "admin"))],
+    arquivo: UploadFile = File(...),
+):
     if not arquivo.filename.endswith(".csv"):  # type: ignore
         raise HTTPException(status_code=400, detail="O arquivo deveria ser CSV.")
 
@@ -61,6 +77,7 @@ async def cadastra_compra_csv(db: conexao_bd, arquivo: UploadFile = File(...)):
         )
 
     inseridas = 0
+    compras = []
     for linha in tabela_csv.iter_rows(named=True):
         try:
             compra = Compra(
@@ -70,12 +87,22 @@ async def cadastra_compra_csv(db: conexao_bd, arquivo: UploadFile = File(...)):
                 forma_pagamento=str(linha["forma_pagamento"]),
             )
             db.add(compra)
-            db.commit()
+            db.flush()
+            compras.append(compra)
             inseridas += 1
         except Exception as e:
             raise HTTPException(
                 status_code=422, detail=f"Erro ao cadastrar {linha}: {e}"
             )
+
+    for compra in compras:
+        guarda_acao(
+            db,
+            AcoesEnum.CADASTRAR_COMPRA,
+            ator["cpf"],
+            None,
+            info_adicional=CompraOut.model_validate(compra).model_dump_json(),
+        )
 
     return {"message": f"{inseridas} compra(s) cadastrada(s) com sucesso."}
 
@@ -85,6 +112,7 @@ async def cadastra_compra_csv(db: conexao_bd, arquivo: UploadFile = File(...)):
     summary="Retorna compras (com filtros opcionais)",
     tags=["Compra"],
     response_model=CompraPaginationOut,
+    dependencies=[Depends(requer_permissao("funcionario", "admin"))],
 )
 def filtra_compra(
     db: conexao_bd,
@@ -106,11 +134,7 @@ def filtra_compra(
         10, ge=1, le=100, description="Quantidade de compras por página (padrão 10)"
     ),
 ):
-    query = (
-        select(Compra)
-        .select_from(Compra)
-        .join(Cliente, Compra.usuario_id == Cliente.usuario_id)
-    )
+    query = select(Compra).join(Cliente, Compra.usuario_id == Cliente.usuario_id)
 
     if horario is not None:
         query = query.where(Compra.horario == horario)

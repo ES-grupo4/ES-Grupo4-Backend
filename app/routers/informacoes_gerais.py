@@ -1,6 +1,9 @@
+from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 
 from sqlalchemy.orm import Session
+
+from app.core.historico_acoes import AcoesEnum, guarda_acao
 from ..core.permissoes import requer_permissao
 from ..models.models import InformacoesGerais
 from ..models.db_setup import get_bd
@@ -18,9 +21,9 @@ router = informacoes_gerais_router
     "/",
     summary="Cria ou substitui as informações gerais",
     response_model=InformacoesGeraisDTO,
-    dependencies=[requer_permissao("admin")],
 )
 def create_or_replace_info(
+    ator: Annotated[dict, Depends(requer_permissao("admin"))],
     data: InformacoesGeraisDTO,
     db: Session = Depends(get_bd),
 ):
@@ -36,6 +39,14 @@ def create_or_replace_info(
     db.commit()
     db.refresh(novo_registro)
 
+    guarda_acao(
+        db,
+        AcoesEnum.ATUALIZAR_INFOS_GERAIS,
+        ator["cpf"],
+        info_adicional=InformacoesGeraisDTO.model_validate(
+            novo_registro, from_attributes=True
+        ).model_dump_json(),
+    )
     return novo_registro
 
 
@@ -44,7 +55,7 @@ def create_or_replace_info(
     summary="Pega as informações gerais",
     tags=["Informações Gerais"],
     response_model=InformacoesGeraisDTO,
-    dependencies=[requer_permissao("funcionario", "admin")],
+    dependencies=[Depends(requer_permissao("funcionario", "admin"))],
 )
 def read_info(db: Session = Depends(get_bd)):
     info = get_informacoes_gerais(db)
@@ -60,9 +71,12 @@ def read_info(db: Session = Depends(get_bd)):
     summary="Atualiza as informações gerais",
     tags=["Informações Gerais"],
     response_model=InformacoesGeraisDTO,
-    dependencies=[requer_permissao("admin")],
 )
-def update_info(data: InformacoesGeraisDTO, db: Session = Depends(get_bd)):
+def update_info(
+    data: InformacoesGeraisDTO,
+    ator: Annotated[dict, Depends(requer_permissao("admin"))],
+    db: Session = Depends(get_bd),
+):
     # tabela com apenas um registro
     try:
         record = db.query(InformacoesGerais).first()
@@ -75,6 +89,15 @@ def update_info(data: InformacoesGeraisDTO, db: Session = Depends(get_bd)):
                 setattr(record, field, value)
         db.commit()
         db.refresh(record)
+        guarda_acao(
+            db,
+            AcoesEnum.ATUALIZAR_INFOS_GERAIS,
+            ator["cpf"],
+            1,
+            # info_adicional=InformacoesGeraisDTO.model_validate(
+            #     record, from_attributes=True
+            # ).model_dump_json(),
+        )
         return record
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
