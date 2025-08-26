@@ -76,6 +76,9 @@ def listar_clientes(
     nome: str | None = Query(
         default=None, description="Filtrar por nome (parcial, case-insensitive)"
     ),
+    cpf: str | None = Query(
+        default=None, description="Filtrar por cpf (parcial, case-insensitive)"
+    ),
     matricula: str | None = Query(
         default=None, description="Filtrar por matrícula exata"
     ),
@@ -109,6 +112,8 @@ def listar_clientes(
 
     if nome is not None:
         query = query.where(Cliente.nome.ilike(f"%{nome}%"))
+    if cpf is not None:
+        query = query.where(Cliente.nome.ilike(f"%{gerar_hash(cpf)}%"))
     if matricula is not None:
         query = query.where(Cliente.matricula == matricula)
     if tipo is not None:
@@ -188,6 +193,34 @@ def editar_cliente(
     return ClienteOut.from_orm(cliente)
 
 
+@cliente_router.put(
+    "/id/{id}",
+    summary="Edita os dados de um cliente pelo ID",
+    response_model=ClienteOut,
+)
+def editar_cliente_id(
+    id: int,
+    dados: ClienteEdit,
+    ator: Annotated[dict, Depends(requer_permissao("funcionario", "admin"))],
+    db: conexao_bd,
+):
+    """
+    Edita os dados de um cliente existente, exceto CPF, ID e tipo.
+    """
+    cliente = db.scalar(select(Cliente).where(Cliente.id == id))
+    if not cliente:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Cliente não encontrado",
+        )
+    for campo, valor in dados.model_dump(exclude_unset=True).items():
+        setattr(cliente, campo, valor)
+    db.flush()
+    db.refresh(cliente)
+    guarda_acao(db, AcoesEnum.ATUALIZAR_CLIENTE, ator["cpf"], cliente.id)
+    return ClienteOut.from_orm(cliente)
+
+
 @cliente_router.get(
     "/{cpf}",
     summary="Busca um cliente pelo CPF",
@@ -205,6 +238,50 @@ def buscar_cliente(cpf: str, db: conexao_bd):
             detail="Cliente não encontrado",
         )
     return ClienteOut.from_orm(cliente)
+
+
+@cliente_router.get(
+    "/{id}",
+    summary="Busca um cliente pelo ID",
+    response_model=ClienteOut,
+)
+def buscar_cliente_id(id: int, db: conexao_bd):
+    """
+    Retorna os dados de um cliente a partir do iD.
+    """
+    cliente = db.scalar(select(Cliente).where(Cliente.id == id))
+    if not cliente:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Cliente não encontrado",
+        )
+    return ClienteOut.from_orm(cliente)
+
+
+@cliente_router.delete("/{id}", summary="Anonimiza um cliente")
+def anonimiza_funcionario(
+    ator: Annotated[dict, Depends(requer_permissao("admin"))], db: conexao_bd, id: int
+):
+    cliente = db.scalar(select(Cliente).where(Cliente.id == id))
+    if not cliente:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Cliente não encontrado"
+        )
+
+    if cliente.cpf_hash is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Cliente já foi anonimizado",
+        )
+
+    cliente.cpf_hash = None
+    cliente.cpf_cript = None
+    cliente.nome = None
+
+    db.flush()
+    guarda_acao(db, AcoesEnum.ANONIMIZAR_CLIENTE, ator["cpf"], cliente.id)
+
+    return {"message": "Funcionário desativado com sucesso"}
 
 
 @cliente_router.post(
