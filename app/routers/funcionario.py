@@ -269,7 +269,7 @@ def desativa_funcionario(
 
 @router.post(
     "/{id}/anonimizar",
-    summary="Anonimiza um funcionário pelo CPF (LGPD)",
+    summary="Anonimiza um funcionário pelo ID (LGPD)",
 )
 def anonimiza_funcionario(
     ator: Annotated[dict, Depends(requer_permissao("admin"))], db: conexao_bd, id: int
