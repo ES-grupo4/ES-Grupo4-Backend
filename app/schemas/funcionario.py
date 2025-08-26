@@ -12,8 +12,8 @@ class tipoFuncionarioEnum(str, Enum):
 
 class FuncionarioOut(BaseModel):
     id: int
-    nome: str
-    cpf: str = Field(..., description="CPF descriptografado")
+    nome: str | None
+    cpf: str | None = Field(..., description="CPF descriptografado")
     email: EmailStr | None
     tipo: tipoFuncionarioEnum
     data_entrada: date
