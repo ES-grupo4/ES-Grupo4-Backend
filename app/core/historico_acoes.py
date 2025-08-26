@@ -13,11 +13,14 @@ class AcoesEnum(str, Enum):
     CADASTRAR_FUNCIONARIO = "cadastrou funcionário"
     ATUALIZAR_FUNCIONARIO = "atualizou funcionário"
     DELETAR_FUNCIONARIO = "deletou funcionário"
+    DESATIVAR_FUNCIONARIO = "desativou funcionário"
+    ANONIMIZAR_FUNCIONARIO = "anonimizou funcionário"
     ATUALIZAR_INFOS_GERAIS = "atualizou informações gerais"
     CADASTRAR_COMPRA = "cadastrou compra"
     CADASTRAR_CLIENTE = "cadastrou cliente"
     ATUALIZAR_CLIENTE = "atualizou cliente"
     DELETAR_CLIENTE = "deletou cliente"
+    ANONIMIZAR_CLIENTE = "anonimizou cliente"
 
 
 def guarda_acao(

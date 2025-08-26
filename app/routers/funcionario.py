@@ -49,7 +49,6 @@ def valida_funcionario(
 @router.post(
     "/",
     summary="Cria um funcionário no sistema",
-    tags=["Funcionário"],
 )
 def cadastra_funcionario(
     ator: Annotated[dict, Depends(requer_permissao("admin"))],
@@ -77,7 +76,6 @@ def cadastra_funcionario(
     "/{id}/",
     response_model=FuncionarioOut,
     summary="Atualiza os dados de um funcionário",
-    tags=["Funcionário"],
 )
 def atualiza_funcionario(
     ator: Annotated[dict, Depends(requer_permissao("admin"))],
@@ -108,7 +106,6 @@ def atualiza_funcionario(
 @router.get(
     "/",
     summary="Retorna todos os funcionários cadastrados",
-    tags=["Funcionário"],
     response_model=FuncionarioPaginationOut,
     dependencies=[Depends(requer_permissao("funcionario", "admin"))],
 )
@@ -163,7 +160,6 @@ def busca_funcionarios(
 @router.get(
     "/admin/",
     summary="Retorna todos os administradores cadastrados",
-    tags=["Funcionário"],
     response_model=FuncionarioPaginationOut,
     dependencies=[Depends(requer_permissao("funcionario", "admin"))],
 )
@@ -198,7 +194,7 @@ def busca_admins(
         query = query.where(Funcionario.email == email)
     if data_entrada:
         query = query.where(Funcionario.data_entrada == data_entrada)
-    if data_saida:
+    if data_saida is not None:
         query = query.where(Funcionario.data_saida == data_saida)
 
     offset = (page - 1) * page_size
@@ -218,7 +214,6 @@ def busca_admins(
 @router.delete(
     "/",
     summary="Remove um funcionário pelo CPF",
-    tags=["Funcionário"],
 )
 def deleta_funcionario(
     ator: Annotated[dict, Depends(requer_permissao("admin"))], db: conexao_bd, cpf: str
@@ -240,7 +235,6 @@ def deleta_funcionario(
 @router.post(
     "/{cpf}/desativar",
     summary="Desativa um funcionário pelo CPF (LGPD)",
-    tags=["Funcionário"],
 )
 def desativa_funcionario(
     ator: Annotated[dict, Depends(requer_permissao("admin"))],
@@ -266,7 +260,37 @@ def desativa_funcionario(
 
     funcionario.email = None
     funcionario.data_saida = data_saida
+
     db.flush()
-    guarda_acao(db, AcoesEnum.DELETAR_FUNCIONARIO, ator["cpf"], funcionario.id)
+    guarda_acao(db, AcoesEnum.DESATIVAR_FUNCIONARIO, ator["cpf"], funcionario.id)
+
+    return {"message": "Funcionário desativado com sucesso"}
+
+
+@router.post(
+    "/{id}/anonimizar",
+    summary="Anonimiza um funcionário pelo CPF (LGPD)",
+)
+def anonimiza_funcionario(
+    ator: Annotated[dict, Depends(requer_permissao("admin"))], db: conexao_bd, id: int
+):
+    funcionario = db.scalar(select(Funcionario).where(Funcionario.id == id))
+    if not funcionario:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Funcionário não encontrado"
+        )
+
+    if funcionario.nome is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Funcionário já foi anonimizado",
+        )
+
+    funcionario.cpf_hash = None
+    funcionario.cpf_cript = None
+    funcionario.nome = None
+
+    db.flush()
+    guarda_acao(db, AcoesEnum.ANONIMIZAR_FUNCIONARIO, ator["cpf"], funcionario.id)
 
     return {"message": "Funcionário desativado com sucesso"}
