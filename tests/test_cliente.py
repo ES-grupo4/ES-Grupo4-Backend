@@ -686,8 +686,7 @@ class ClienteTestCase(unittest.TestCase):
 
         # Busca global por "Carlos" (campo nome)
         response = self.client.get(
-            "/cliente/search/?q=Mariana&page=1&page_size=10",
-            headers=self.auth_headers
+            "/cliente/search/?q=Mariana&page=1&page_size=10", headers=self.auth_headers
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -696,14 +695,12 @@ class ClienteTestCase(unittest.TestCase):
 
         # Busca global por "MAT9002" (campo matricula)
         response2 = self.client.get(
-            "/cliente/search/?q=MAT9002&page=1&page_size=10",
-            headers=self.auth_headers
+            "/cliente/search/?q=MAT9002&page=1&page_size=10", headers=self.auth_headers
         )
         self.assertEqual(response2.status_code, 200)
         data2 = response2.json()
         nomes2 = [c["nome"] for c in data2["items"]]
         self.assertIn("Mariana Costa", nomes2)
-
 
 
 if __name__ == "__main__":

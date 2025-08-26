@@ -359,6 +359,7 @@ async def upload_clientes_csv(
 
     return {"message": f"{inseridos} cliente(s) cadastrado(s) com sucesso."}
 
+
 @cliente_router.get(
     "/search/",
     summary="Pesquisa clientes em todas as colunas",
@@ -371,7 +372,8 @@ def buscar_clientes_todos_campos(
         default=None, description="Termo de busca para nome, cpf, matrícula, subtipo"
     ),
     tipo: ClienteEnum | None = Query(
-        default=None, description="Filtrar por tipo (externo, professor, tecnico, aluno)"
+        default=None,
+        description="Filtrar por tipo (externo, professor, tecnico, aluno)",
     ),
     page: int = Query(1, ge=1, description="Número da página (padrão 1)"),
     page_size: int = Query(
@@ -393,7 +395,7 @@ def buscar_clientes_todos_campos(
         filtros = [
             Cliente.nome.ilike(like_pattern),
             Cliente.matricula.ilike(like_pattern),
-            Cliente.subtipo.ilike(like_pattern)
+            Cliente.subtipo.ilike(like_pattern),
         ]
         if cpf_hash:
             filtros.append(Cliente.cpf.ilike(f"%{cpf_hash}%"))
