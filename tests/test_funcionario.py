@@ -1715,205 +1715,113 @@ class FuncionarioTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 403)
 
-    # ===== Testes para novas rotas de listagem paginada =====
-    # /funcionario/listar/admin
-    def test_listar_admins_sem_autorizacao(self):
-        response = client.get(
-            "/funcionario/listar/admin", headers=self.auth_headers_invalido
-        )
-        self.assertEqual(response.status_code, 401)
+    def test_pesquisar_sem_autorizacao(self):
+        resp = client.get("/funcionario/pesquisar", headers=self.auth_headers_invalido)
+        self.assertEqual(resp.status_code, 401)
 
-    def test_listar_admins_sem_parametros(self):
-        response = client.get("/funcionario/listar/admin", headers=self.auth_headers)
-        self.assertEqual(response.status_code, 200)
-        admin = self.busca_admin_por_cpf("19896507406").json()["items"][0]
-        itens = response.json().get("items", [])
-        self.assertIn(admin, itens)
-        data = response.json()
+    def test_pesquisar_sem_parametros(self):
+        self.cria_funcionario()
+        resp = client.get("/funcionario/pesquisar", headers=self.auth_headers)
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        func = self.busca_funcionario_por_cpf("79920205451").json()["items"][0]
+        self.assertIn(func, data.get("items", []))
         self.assertEqual(1, data["page"])
         self.assertEqual(10, data["page_size"])
 
-    def test_listar_admins_busca_por_nome(self):
-        response = client.get(
-            "/funcionario/listar/admin?busca=John%20Doe", headers=self.auth_headers
+    def test_pesquisar_busca_por_nome(self):
+        self.cria_funcionario()
+        resp = client.get(
+            "/funcionario/pesquisar?busca=John%20Dois", headers=self.auth_headers
         )
-        self.assertEqual(response.status_code, 200)
-        esperado = self.busca_admin_por_cpf("19896507406").json()["items"]
-        self.assertEqual(esperado, response.json()["items"]) 
+        self.assertEqual(resp.status_code, 200)
+        esperado = self.busca_funcionario_por_cpf("79920205451").json()["items"]
+        self.assertEqual(esperado, resp.json()["items"])
 
-    def test_listar_admins_busca_por_email(self):
-        response = client.get(
-            "/funcionario/listar/admin?busca=john@doe.com", headers=self.auth_headers
-        )
-        self.assertEqual(response.status_code, 200)
-        esperado = self.busca_admin_por_cpf("19896507406").json()["items"]
-        self.assertEqual(esperado, response.json()["items"]) 
-
-    def test_listar_admins_busca_por_tipo(self):
-        response = client.get(
-            "/funcionario/listar/admin?busca=admin", headers=self.auth_headers
-        )
-        self.assertEqual(response.status_code, 200)
-        admin = self.busca_admin_por_cpf("19896507406").json()["items"][0]
-        self.assertIn(admin, response.json().get("items", []))
-
-    def test_listar_admins_busca_por_id(self):
-        admin = self.busca_admin_por_cpf("19896507406").json()["items"][0]
-        response = client.get(
-            f"/funcionario/listar/admin?busca={admin['id']}", headers=self.auth_headers
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(admin, response.json().get("items", []))
-
-    def test_listar_admins_busca_por_cpf(self):
-        response = client.get(
-            "/funcionario/listar/admin?busca=19896507406", headers=self.auth_headers
-        )
-        self.assertEqual(response.status_code, 200)
-        esperado = self.busca_admin_por_cpf("19896507406").json()["items"]
-        self.assertEqual(esperado, response.json()["items"]) 
-
-    def test_listar_admins_busca_por_data_iso(self):
-        response = client.get(
-            "/funcionario/listar/admin?busca=2025-08-04", headers=self.auth_headers
-        )
-        self.assertEqual(response.status_code, 200)
-        admin = self.busca_admin_por_cpf("19896507406").json()["items"][0]
-        self.assertIn(admin, response.json().get("items", []))
-
-    def test_listar_admins_busca_por_data_br(self):
-        response = client.get(
-            "/funcionario/listar/admin?busca=04/08/2025", headers=self.auth_headers
-        )
-        self.assertEqual(response.status_code, 200)
-        admin = self.busca_admin_por_cpf("19896507406").json()["items"][0]
-        self.assertIn(admin, response.json().get("items", []))
-
-    def test_listar_admins_busca_inexistente(self):
-        response = client.get(
-            "/funcionario/listar/admin?busca=nao_encontrara_aqui_123",
+    def test_pesquisar_busca_por_email(self):
+        self.cria_funcionario()
+        resp = client.get(
+            "/funcionario/pesquisar?busca=john@dois.com",
             headers=self.auth_headers,
         )
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
+        self.assertEqual(resp.status_code, 200)
+        esperado = self.busca_funcionario_por_cpf("79920205451").json()["items"]
+        self.assertEqual(esperado, resp.json()["items"])
+
+    def test_pesquisar_busca_por_tipo_funcionario(self):
+        self.cria_funcionario()
+        resp = client.get(
+            "/funcionario/pesquisar?busca=funcionario", headers=self.auth_headers
+        )
+        self.assertEqual(resp.status_code, 200)
+        func = self.busca_funcionario_por_cpf("79920205451").json()["items"][0]
+        self.assertIn(func, resp.json().get("items", []))
+
+    def test_pesquisar_busca_por_id(self):
+        self.cria_funcionario()
+        func = self.busca_funcionario_por_cpf("79920205451").json()["items"][0]
+        resp = client.get(
+            f"/funcionario/pesquisar?busca={func['id']}", headers=self.auth_headers
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn(func, resp.json().get("items", []))
+
+    def test_pesquisar_busca_por_cpf(self):
+        self.cria_funcionario()
+        resp = client.get(
+            "/funcionario/pesquisar?busca=79920205451", headers=self.auth_headers
+        )
+        self.assertEqual(resp.status_code, 200)
+        esperado = self.busca_funcionario_por_cpf("79920205451").json()["items"]
+        self.assertEqual(esperado, resp.json()["items"])
+
+    def test_pesquisar_busca_por_data_entrada_iso(self):
+        self.cria_funcionario()
+        resp = client.get(
+            "/funcionario/pesquisar?busca=2025-08-22", headers=self.auth_headers
+        )
+        self.assertEqual(resp.status_code, 200)
+        func = self.busca_funcionario_por_cpf("79920205451").json()["items"][0]
+        self.assertIn(func, resp.json().get("items", []))
+
+    def test_pesquisar_busca_por_data_entrada_br(self):
+        self.cria_funcionario()
+        resp = client.get(
+            "/funcionario/pesquisar?busca=22/08/2025", headers=self.auth_headers
+        )
+        self.assertEqual(resp.status_code, 200)
+        func = self.busca_funcionario_por_cpf("79920205451").json()["items"][0]
+        self.assertIn(func, resp.json().get("items", []))
+
+    def test_pesquisar_busca_por_data_saida(self):
+        self.cria_funcionario()
+        data_saida = date.today()
+        client.post(
+            f"/funcionario/79920205451/desativar?data_saida={data_saida}",
+            headers=self.auth_headers,
+        )
+        resp = client.get(
+            f"/funcionario/pesquisar?busca={data_saida}", headers=self.auth_headers
+        )
+        self.assertEqual(resp.status_code, 200)
+        func = self.busca_funcionario_por_cpf("79920205451").json()["items"][0]
+        self.assertIn(func, resp.json().get("items", []))
+
+        self.assertIsNone(
+            self.busca_funcionario_por_cpf("79920205451").json()["items"][0]["email"]
+        )
+
+    def test_pesquisar_busca_inexistente(self):
+        resp = client.get(
+            "/funcionario/pesquisar?busca=nao_encontrara_aqui_123",
+            headers=self.auth_headers,
+        )
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
         self.assertEqual([], data["items"])
         self.assertEqual(0, data["total_in_page"])
 
-    def test_listar_admins_paginacao(self):
-        response = client.get(
-            "/funcionario/listar/admin?page=1&page_size=1",
-            headers=self.auth_headers,
-        )
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertEqual(1, data["page"])
-        self.assertEqual(1, data["page_size"])
-        self.assertGreaterEqual(data["total_in_page"], 1)
-        self.assertGreaterEqual(data["total_pages"], 1)
-
-    # /funcionario/listar/funcionario/
-    def test_listar_funcionarios_sem_autorizacao(self):
-        response = client.get(
-            "/funcionario/listar/funcionario/", headers=self.auth_headers_invalido
-        )
-        self.assertEqual(response.status_code, 401)
-
-    def test_listar_funcionarios_sem_parametros(self):
-        self.cria_funcionario()
-        response = client.get(
-            "/funcionario/listar/funcionario/", headers=self.auth_headers
-        )
-        self.assertEqual(response.status_code, 200)
-        func = self.busca_funcionario_por_cpf("79920205451").json()["items"][0]
-        itens = response.json().get("items", [])
-        self.assertIn(func, itens)
-        data = response.json()
-        self.assertEqual(1, data["page"])
-        self.assertEqual(10, data["page_size"])
-
-    def test_listar_funcionarios_busca_por_nome(self):
-        self.cria_funcionario()
-        response = client.get(
-            "/funcionario/listar/funcionario/?busca=John%20Dois",
-            headers=self.auth_headers,
-        )
-        self.assertEqual(response.status_code, 200)
-        esperado = self.busca_funcionario_por_cpf("79920205451").json()["items"]
-        self.assertEqual(esperado, response.json()["items"]) 
-
-    def test_listar_funcionarios_busca_por_email(self):
-        self.cria_funcionario()
-        response = client.get(
-            "/funcionario/listar/funcionario/?busca=john@dois.com",
-            headers=self.auth_headers,
-        )
-        self.assertEqual(response.status_code, 200)
-        esperado = self.busca_funcionario_por_cpf("79920205451").json()["items"]
-        self.assertEqual(esperado, response.json()["items"]) 
-
-    def test_listar_funcionarios_busca_por_tipo(self):
-        self.cria_funcionario()
-        response = client.get(
-            "/funcionario/listar/funcionario/?busca=funcionario",
-            headers=self.auth_headers,
-        )
-        self.assertEqual(response.status_code, 200)
-        func = self.busca_funcionario_por_cpf("79920205451").json()["items"][0]
-        self.assertIn(func, response.json().get("items", []))
-
-    def test_listar_funcionarios_busca_por_id(self):
-        self.cria_funcionario()
-        func = self.busca_funcionario_por_cpf("79920205451").json()["items"][0]
-        response = client.get(
-            f"/funcionario/listar/funcionario/?busca={func['id']}",
-            headers=self.auth_headers,
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(func, response.json().get("items", []))
-
-    def test_listar_funcionarios_busca_por_cpf(self):
-        self.cria_funcionario()
-        response = client.get(
-            "/funcionario/listar/funcionario/?busca=79920205451",
-            headers=self.auth_headers,
-        )
-        self.assertEqual(response.status_code, 200)
-        esperado = self.busca_funcionario_por_cpf("79920205451").json()["items"]
-        self.assertEqual(esperado, response.json()["items"]) 
-
-    def test_listar_funcionarios_busca_por_data_iso(self):
-        self.cria_funcionario()
-        response = client.get(
-            "/funcionario/listar/funcionario/?busca=2025-08-22",
-            headers=self.auth_headers,
-        )
-        self.assertEqual(response.status_code, 200)
-        func = self.busca_funcionario_por_cpf("79920205451").json()["items"][0]
-        self.assertIn(func, response.json().get("items", []))
-
-    def test_listar_funcionarios_busca_por_data_br(self):
-        self.cria_funcionario()
-        response = client.get(
-            "/funcionario/listar/funcionario/?busca=22/08/2025",
-            headers=self.auth_headers,
-        )
-        self.assertEqual(response.status_code, 200)
-        func = self.busca_funcionario_por_cpf("79920205451").json()["items"][0]
-        self.assertIn(func, response.json().get("items", []))
-
-    def test_listar_funcionarios_busca_inexistente(self):
-        self.cria_funcionario()
-        response = client.get(
-            "/funcionario/listar/funcionario/?busca=nao_encontrara_aqui_123",
-            headers=self.auth_headers,
-        )
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertEqual([], data["items"])
-        self.assertEqual(0, data["total_in_page"])
-
-    def test_listar_funcionarios_paginacao(self):
-        # cria dois funcionarios para paginar
+    def test_pesquisar_paginacao(self):
         self.cria_funcionario()
         self.cria_funcionario(
             {
@@ -1926,11 +1834,11 @@ class FuncionarioTestCase(unittest.TestCase):
             }
         )
         resp1 = client.get(
-            "/funcionario/listar/funcionario/?page=1&page_size=1",
+            "/funcionario/pesquisar?busca=funcionario&page=1&page_size=1",
             headers=self.auth_headers,
         )
         resp2 = client.get(
-            "/funcionario/listar/funcionario/?page=2&page_size=1",
+            "/funcionario/pesquisar?busca=funcionario&page=2&page_size=1",
             headers=self.auth_headers,
         )
         self.assertEqual(resp1.status_code, 200)
@@ -1945,3 +1853,14 @@ class FuncionarioTestCase(unittest.TestCase):
         cpfs = {f["cpf"] for f in d1["items"] + d2["items"]}
         self.assertIn("79920205451", cpfs)
         self.assertIn("89159073454", cpfs)
+
+    def test_pesquisar_com_perfil_funcionario(self):
+        self.cria_funcionario()
+        self.login_funcionario()
+        resp = client.get(
+            "/funcionario/pesquisar?busca=funcionario",
+            headers=self.auth_headers_funcionario,
+        )
+        self.assertEqual(resp.status_code, 200)
+        itens = resp.json().get("items", [])
+        self.assertGreaterEqual(len(itens), 1)

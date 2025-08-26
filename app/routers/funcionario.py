@@ -157,13 +157,14 @@ def busca_funcionarios(
         "items": funcionarios_out,
     }
 
+
 @router.get(
-    "/listar/admin",
+    "/pesquisar",
     summary="Pesquisa paginada de funcionários admins (uma string aplicada a várias colunas)",
     response_model=FuncionarioPaginationOut,
     dependencies=[Depends(requer_permissao("funcionario", "admin"))],
 )
-def listar_admins(
+def pesquisar_funcionarios(
     db: conexao_bd,
     busca: str | None = Query(
         default=None,
@@ -172,10 +173,12 @@ def listar_admins(
         ),
     ),
     page: int = Query(1, ge=1, description="Número da página (padrão 1)"),
-    page_size: int = Query(10, ge=1, le=100, description="Quantidade de registros por página"),
+    page_size: int = Query(
+        10, ge=1, le=100, description="Quantidade de registros por página"
+    ),
 ):
-    query = select(Funcionario).where(Funcionario.tipo == "admin")
-    
+    query = select(Funcionario)
+
     if busca:
         busca_like = f"%{busca}%"
         conditions = []
@@ -218,68 +221,7 @@ def listar_admins(
         "total_pages": ceil(total / page_size) if total else 0,
         "items": items,
     }
-@router.get(
-    "/listar/funcionario/",
-    summary="Pesquisa paginada de funcionários admins (uma string aplicada a várias colunas)",
-    response_model=FuncionarioPaginationOut,
-    dependencies=[Depends(requer_permissao("funcionario", "admin"))],
-)
-def listar_funcionarios(
-    db: conexao_bd,
-    busca: str | None = Query(
-        default=None,
-        description=(
-            "String de busca aplicada a id, nome, CPF (se for CPF válido), email, tipo e datas"
-        ),
-    ),
-    page: int = Query(1, ge=1, description="Número da página (padrão 1)"),
-    page_size: int = Query(10, ge=1, le=100, description="Quantidade de registros por página"),
-):
-    query = select(Funcionario).where(Funcionario.tipo == "funcionario")
-    
-    if busca:
-        busca_like = f"%{busca}%"
-        conditions = []
 
-        conditions.append(Funcionario.nome.ilike(busca_like))
-        conditions.append(Funcionario.email.ilike(busca_like))
-        conditions.append(cast(Funcionario.tipo, SAString).ilike(busca_like))
-
-        if busca.isdigit():
-            conditions.append(Funcionario.id == int(busca))
-
-        try:
-            cpf_norm = valida_e_retorna_cpf(busca)
-            conditions.append(Funcionario.cpf_hash == gerar_hash(cpf_norm))
-        except Exception:
-            pass
-
-        parsed_date = None
-        for fmt in ("%Y-%m-%d", "%d/%m/%Y"):
-            try:
-                parsed_date = datetime.strptime(busca, fmt).date()
-                break
-            except Exception:
-                continue
-        if parsed_date:
-            conditions.append(Funcionario.data_entrada == parsed_date)
-            conditions.append(Funcionario.data_saida == parsed_date)
-
-        query = query.where(or_(*conditions))
-
-    offset = (page - 1) * page_size
-    total = db.scalar(select(func.count()).select_from(query.subquery()))
-    resultados = db.scalars(query.offset(offset).limit(page_size)).all()
-    items = [FuncionarioOut.from_orm(f) for f in resultados]
-
-    return {
-        "total_in_page": len(resultados),
-        "page": page,
-        "page_size": page_size,
-        "total_pages": ceil(total / page_size) if total else 0,
-        "items": items,
-    }
-    
 
 @router.get(
     "/admin/",

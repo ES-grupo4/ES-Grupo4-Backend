@@ -163,6 +163,7 @@ def remover_cliente(
     db.flush()
     guarda_acao(db, AcoesEnum.DELETAR_CLIENTE, ator["cpf"], cliente.id)
 
+
 @cliente_router.delete(
     "id/{id}",
     summary="Remove um cliente pelo ID",
@@ -185,6 +186,7 @@ def remover_cliente_id(
     db.delete(cliente)
     db.flush()
     guarda_acao(db, AcoesEnum.DELETAR_CLIENTE, ator["cpf"], cliente.id)
+
 
 @cliente_router.put(
     "/{cpf}",
