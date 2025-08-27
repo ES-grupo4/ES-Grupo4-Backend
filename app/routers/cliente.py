@@ -361,14 +361,14 @@ async def upload_clientes_csv(
 
 
 @cliente_router.get(
-    "/search/",
+    "/buscar-clientes-todos-campos/",
     summary="Pesquisa clientes em todas as colunas",
     response_model=ClientePaginationOut,
     dependencies=[Depends(requer_permissao("funcionario", "admin"))],
 )
 def buscar_clientes_todos_campos(
     db: conexao_bd,
-    q: str | None = Query(
+    search_term: str | None = Query(
         default=None, description="Termo de busca para nome, cpf, matrícula, subtipo"
     ),
     tipo: ClienteEnum | None = Query(
@@ -386,11 +386,11 @@ def buscar_clientes_todos_campos(
     """
     query = select(Cliente)
 
-    if q:
-        like_pattern = f"%{q}%"
+    if search_term:
+        like_pattern = f"%{search_term}%"
 
         # CPF precisa de tratamento especial (hash)
-        cpf_hash = gerar_hash(q) if q.isdigit() else None
+        cpf_hash = gerar_hash(search_term) if search_term.isdigit() else None
 
         filtros = [
             Cliente.nome.ilike(like_pattern),
