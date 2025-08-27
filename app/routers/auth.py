@@ -37,7 +37,7 @@ async def login(login_data: LoginDTO, db: conexao_bd):
         token = cria_token_de_acesso(
             {"sub": usuario.cpf, "tipo": usuario.tipo.value, "id": usuario.id}
         )
-        return {"token": token}
+        return {"token": token, "tipo": usuario.tipo.value}
 
     else:
         raise HTTPException(
