@@ -1,6 +1,6 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select, func, or_, cast, true
+from sqlalchemy import select, func, or_, cast, and_
 from sqlalchemy.sql.sqltypes import String as SAString
 from math import ceil
 from pydantic import EmailStr
@@ -159,8 +159,8 @@ def busca_funcionarios(
 
 
 @router.get(
-    "/pesquisar",
-    summary="Pesquisa paginada de funcionários admins (uma string aplicada a várias colunas)",
+    "/admins",
+    summary="Pesquisa paginada de funcionários/admins (uma string aplicada a várias colunas)",
     response_model=FuncionarioPaginationOut,
     dependencies=[Depends(requer_permissao("funcionario", "admin"))],
 )
@@ -171,6 +171,12 @@ def pesquisar_funcionarios(
         description=(
             "String de busca aplicada a id, nome, CPF (se for CPF válido), email, tipo e datas"
         ),
+    ),
+    desativados: bool | None = Query(
+        None, description="Filtra pelos funcionários/admins desativados"
+    ),
+    anonimizados: bool | None = Query(
+        None, description="Filtra pelos funcionários/admins anonimizados"
     ),
     page: int = Query(1, ge=1, description="Número da página (padrão 1)"),
     page_size: int = Query(
@@ -208,6 +214,14 @@ def pesquisar_funcionarios(
             conditions.append(Funcionario.data_saida == parsed_date)
 
         query = query.where(or_(*conditions))
+
+    if desativados is True:
+        query = query.where(Funcionario.data_saida.isnot(None))
+
+    if anonimizados is True:
+        query = query.where(
+            and_(Funcionario.nome.is_(None), Funcionario.cpf_hash.is_(None))
+        )
 
     offset = (page - 1) * page_size
     total = db.scalar(select(func.count()).select_from(query.subquery()))

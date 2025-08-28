@@ -1727,12 +1727,12 @@ class FuncionarioTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_pesquisar_sem_autorizacao(self):
-        resp = client.get("/funcionario/pesquisar", headers=self.auth_headers_invalido)
+        resp = client.get("/funcionario/admins", headers=self.auth_headers_invalido)
         self.assertEqual(resp.status_code, 401)
 
     def test_pesquisar_sem_parametros(self):
         self.cria_funcionario()
-        resp = client.get("/funcionario/pesquisar", headers=self.auth_headers)
+        resp = client.get("/funcionario/admins", headers=self.auth_headers)
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
         func = self.busca_funcionario_por_cpf("79920205451").json()["items"][0]
@@ -1743,7 +1743,7 @@ class FuncionarioTestCase(unittest.TestCase):
     def test_pesquisar_busca_por_nome(self):
         self.cria_funcionario()
         resp = client.get(
-            "/funcionario/pesquisar?busca=John%20Dois", headers=self.auth_headers
+            "/funcionario/admins?busca=John%20Dois", headers=self.auth_headers
         )
         self.assertEqual(resp.status_code, 200)
         esperado = self.busca_funcionario_por_cpf("79920205451").json()["items"]
@@ -1752,7 +1752,7 @@ class FuncionarioTestCase(unittest.TestCase):
     def test_pesquisar_busca_por_email(self):
         self.cria_funcionario()
         resp = client.get(
-            "/funcionario/pesquisar?busca=john@dois.com",
+            "/funcionario/admins?busca=john@dois.com",
             headers=self.auth_headers,
         )
         self.assertEqual(resp.status_code, 200)
@@ -1762,7 +1762,7 @@ class FuncionarioTestCase(unittest.TestCase):
     def test_pesquisar_busca_por_tipo_funcionario(self):
         self.cria_funcionario()
         resp = client.get(
-            "/funcionario/pesquisar?busca=funcionario", headers=self.auth_headers
+            "/funcionario/admins?busca=funcionario", headers=self.auth_headers
         )
         self.assertEqual(resp.status_code, 200)
         func = self.busca_funcionario_por_cpf("79920205451").json()["items"][0]
@@ -1772,7 +1772,7 @@ class FuncionarioTestCase(unittest.TestCase):
         self.cria_funcionario()
         func = self.busca_funcionario_por_cpf("79920205451").json()["items"][0]
         resp = client.get(
-            f"/funcionario/pesquisar?busca={func['id']}", headers=self.auth_headers
+            f"/funcionario/admins?busca={func['id']}", headers=self.auth_headers
         )
         self.assertEqual(resp.status_code, 200)
         self.assertIn(func, resp.json().get("items", []))
@@ -1780,7 +1780,7 @@ class FuncionarioTestCase(unittest.TestCase):
     def test_pesquisar_busca_por_cpf(self):
         self.cria_funcionario()
         resp = client.get(
-            "/funcionario/pesquisar?busca=79920205451", headers=self.auth_headers
+            "/funcionario/admins?busca=79920205451", headers=self.auth_headers
         )
         self.assertEqual(resp.status_code, 200)
         esperado = self.busca_funcionario_por_cpf("79920205451").json()["items"]
@@ -1789,7 +1789,7 @@ class FuncionarioTestCase(unittest.TestCase):
     def test_pesquisar_busca_por_data_entrada_iso(self):
         self.cria_funcionario()
         resp = client.get(
-            "/funcionario/pesquisar?busca=2025-08-22", headers=self.auth_headers
+            "/funcionario/admins?busca=2025-08-22", headers=self.auth_headers
         )
         self.assertEqual(resp.status_code, 200)
         func = self.busca_funcionario_por_cpf("79920205451").json()["items"][0]
@@ -1798,7 +1798,7 @@ class FuncionarioTestCase(unittest.TestCase):
     def test_pesquisar_busca_por_data_entrada_br(self):
         self.cria_funcionario()
         resp = client.get(
-            "/funcionario/pesquisar?busca=22/08/2025", headers=self.auth_headers
+            "/funcionario/admins?busca=22/08/2025", headers=self.auth_headers
         )
         self.assertEqual(resp.status_code, 200)
         func = self.busca_funcionario_por_cpf("79920205451").json()["items"][0]
@@ -1812,7 +1812,7 @@ class FuncionarioTestCase(unittest.TestCase):
             headers=self.auth_headers,
         )
         resp = client.get(
-            f"/funcionario/pesquisar?busca={data_saida}", headers=self.auth_headers
+            f"/funcionario/admins?busca={data_saida}", headers=self.auth_headers
         )
         self.assertEqual(resp.status_code, 200)
         func = self.busca_funcionario_por_cpf("79920205451").json()["items"][0]
@@ -1824,7 +1824,7 @@ class FuncionarioTestCase(unittest.TestCase):
 
     def test_pesquisar_busca_inexistente(self):
         resp = client.get(
-            "/funcionario/pesquisar?busca=nao_encontrara_aqui_123",
+            "/funcionario/admins?busca=nao_encontrara_aqui_123",
             headers=self.auth_headers,
         )
         self.assertEqual(resp.status_code, 200)
@@ -1845,11 +1845,11 @@ class FuncionarioTestCase(unittest.TestCase):
             }
         )
         resp1 = client.get(
-            "/funcionario/pesquisar?busca=funcionario&page=1&page_size=1",
+            "/funcionario/admins?busca=funcionario&page=1&page_size=1",
             headers=self.auth_headers,
         )
         resp2 = client.get(
-            "/funcionario/pesquisar?busca=funcionario&page=2&page_size=1",
+            "/funcionario/admins?busca=funcionario&page=2&page_size=1",
             headers=self.auth_headers,
         )
         self.assertEqual(resp1.status_code, 200)
@@ -1869,9 +1869,60 @@ class FuncionarioTestCase(unittest.TestCase):
         self.cria_funcionario()
         self.login_funcionario()
         resp = client.get(
-            "/funcionario/pesquisar?busca=funcionario",
+            "/funcionario/admins?busca=funcionario",
             headers=self.auth_headers_funcionario,
         )
         self.assertEqual(resp.status_code, 200)
         itens = resp.json().get("items", [])
         self.assertGreaterEqual(len(itens), 1)
+
+    def test_pesquisar_filtra_desativados_true(self):
+        # cria dois funcionários e desativa um
+        self.cria_funcionario()
+        funcionario2 = {
+            "cpf": "89159073454",
+            "nome": "John Tres",
+            "senha": "John123!",
+            "email": "john@tres.com",
+            "tipo": "funcionario",
+            "data_entrada": "2025-08-22",
+        }
+        self.cria_funcionario(funcionario2)
+
+        # desativa o primeiro funcionario
+        data_saida = date.today()
+        client.post(
+            f"/funcionario/79920205451/desativar?data_saida={data_saida}",
+            headers=self.auth_headers,
+        )
+
+        # busca somente desativados
+        resp = client.get(
+            "/funcionario/admins?desativados=true", headers=self.auth_headers
+        )
+        self.assertEqual(resp.status_code, 200)
+        itens = resp.json().get("items", [])
+        cpfs = {f["cpf"] for f in itens}
+        self.assertIn("79920205451", cpfs)
+        self.assertNotIn("89159073454", cpfs)
+
+    def test_pesquisar_filtra_anonimizados_true(self):
+        # cria funcionário e anonimiza
+        self.cria_funcionario()
+        func = self.busca_funcionario_por_cpf("79920205451").json()["items"][0]
+        client.post(
+            f"/funcionario/{func['id']}/anonimizar",
+            headers=self.auth_headers,
+        )
+
+        resp = client.get(
+            "/funcionario/admins?anonimizados=true", headers=self.auth_headers
+        )
+        self.assertEqual(resp.status_code, 200)
+        itens = resp.json().get("items", [])
+        # deve conter o funcionario anonimizado com nome e cpf None
+        ids = {f["id"] for f in itens}
+        self.assertIn(func["id"], ids)
+        anonim = next(f for f in itens if f["id"] == func["id"])
+        self.assertIsNone(anonim["nome"])
+        self.assertIsNone(anonim["cpf"])
