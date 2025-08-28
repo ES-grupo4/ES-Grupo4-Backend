@@ -69,7 +69,7 @@ def cadastra_funcionario(
     )
 
     db.add(usuario)
-    db.flush()
+    db.commit()
     guarda_acao(db, AcoesEnum.CADASTRAR_FUNCIONARIO, ator["cpf"], usuario.id)
     return {"message": "Funcionário cadastrado com sucesso"}
 
@@ -130,7 +130,7 @@ def busca_funcionarios(
         10, ge=1, le=100, description="Quantidade de registros por página (padrão 10)"
     ),
 ):
-    query = select(Funcionario).where(Funcionario.tipo == FuncionarioTipo.funcionario)
+    query = select(Funcionario).where(cast(Funcionario.tipo, SAString) == "funcionario")
 
     if id:
         query = query.where(Funcionario.id == id)
@@ -269,7 +269,7 @@ def busca_admins(
         10, ge=1, le=100, description="Quantidade de registros por página (padrão 10)"
     ),
 ):
-    query = select(Funcionario).where(Funcionario.tipo == FuncionarioTipo.admin)
+    query = select(Funcionario).where(cast(Funcionario.tipo, SAString) == "admin")
 
     if id:
         query = query.where(Funcionario.id == id)
@@ -376,6 +376,7 @@ def anonimiza_funcionario(
     funcionario.cpf_hash = None
     funcionario.cpf_cript = None
     funcionario.nome = None
+    funcionario.email = None
 
     db.flush()
     guarda_acao(db, AcoesEnum.ANONIMIZAR_FUNCIONARIO, ator["cpf"], funcionario.id)
