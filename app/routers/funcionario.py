@@ -216,7 +216,7 @@ def pesquisar_funcionarios(
         query = query.where(or_(*conditions))
 
     if desativados is True:
-        query = query.where(Funcionario.data_saida.isnot(None))
+        query = query.where(Funcionario.data_saida.is_not(None))
 
     if anonimizados is True:
         query = query.where(

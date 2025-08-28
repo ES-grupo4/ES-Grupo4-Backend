@@ -1877,7 +1877,6 @@ class FuncionarioTestCase(unittest.TestCase):
         self.assertGreaterEqual(len(itens), 1)
 
     def test_pesquisar_filtra_desativados_true(self):
-        # cria dois funcionários e desativa um
         self.cria_funcionario()
         funcionario2 = {
             "cpf": "89159073454",
@@ -1889,14 +1888,12 @@ class FuncionarioTestCase(unittest.TestCase):
         }
         self.cria_funcionario(funcionario2)
 
-        # desativa o primeiro funcionario
         data_saida = date.today()
         client.post(
             f"/funcionario/79920205451/desativar?data_saida={data_saida}",
             headers=self.auth_headers,
         )
 
-        # busca somente desativados
         resp = client.get(
             "/funcionario/admins?desativados=true", headers=self.auth_headers
         )
@@ -1907,7 +1904,6 @@ class FuncionarioTestCase(unittest.TestCase):
         self.assertNotIn("89159073454", cpfs)
 
     def test_pesquisar_filtra_anonimizados_true(self):
-        # cria funcionário e anonimiza
         self.cria_funcionario()
         func = self.busca_funcionario_por_cpf("79920205451").json()["items"][0]
         client.post(
@@ -1920,7 +1916,7 @@ class FuncionarioTestCase(unittest.TestCase):
         )
         self.assertEqual(resp.status_code, 200)
         itens = resp.json().get("items", [])
-        # deve conter o funcionario anonimizado com nome e cpf None
+
         ids = {f["id"] for f in itens}
         self.assertIn(func["id"], ids)
         anonim = next(f for f in itens if f["id"] == func["id"])
