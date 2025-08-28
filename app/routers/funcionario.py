@@ -130,7 +130,7 @@ def busca_funcionarios(
         10, ge=1, le=100, description="Quantidade de registros por página (padrão 10)"
     ),
 ):
-    query = select(Funcionario).where(Funcionario.tipo == "funcionario")
+    query = select(Funcionario).where(Funcionario.tipo == FuncionarioTipo.funcionario)
 
     if id:
         query = query.where(Funcionario.id == id)
@@ -224,6 +224,11 @@ def pesquisar_funcionarios(
         query = query.where(
             and_(Funcionario.nome.is_(None), Funcionario.cpf_hash.is_(None))
         )
+    else:
+        # Excluir registros anonimizados por padrão
+        query = query.where(
+            ~and_(Funcionario.nome.is_(None), Funcionario.cpf_hash.is_(None))
+        )
 
     offset = (page - 1) * page_size
     total = db.scalar(select(func.count()).select_from(query.subquery()))
@@ -264,7 +269,7 @@ def busca_admins(
         10, ge=1, le=100, description="Quantidade de registros por página (padrão 10)"
     ),
 ):
-    query = select(Funcionario).where(Funcionario.tipo == "admin")
+    query = select(Funcionario).where(Funcionario.tipo == FuncionarioTipo.admin)
 
     if id:
         query = query.where(Funcionario.id == id)
