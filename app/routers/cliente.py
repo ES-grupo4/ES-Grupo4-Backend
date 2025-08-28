@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status, Query
 from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import or_
 import polars as pl
 
 from app.core.historico_acoes import AcoesEnum, guarda_acao
@@ -137,31 +138,6 @@ def listar_clientes(
         "total_pages": ceil(total / page_size) if total else 0,
         "items": clientes_out,
     }
-
-
-@cliente_router.delete(
-    "/{cpf}",
-    summary="Remove um cliente pelo CPF",
-    status_code=status.HTTP_204_NO_CONTENT,
-)
-def remover_cliente(
-    cpf: str,
-    ator: Annotated[dict, Depends(requer_permissao("funcionario", "admin"))],
-    db: conexao_bd,
-):
-    """
-    Remove um cliente do sistema a partir do CPF.
-    """
-    cpf = valida_e_retorna_cpf(cpf)
-    cliente = db.scalar(select(Cliente).where(Cliente.cpf_hash == gerar_hash(cpf)))
-    if not cliente:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cliente não encontrado",
-        )
-    db.delete(cliente)
-    db.flush()
-    guarda_acao(db, AcoesEnum.DELETAR_CLIENTE, ator["cpf"], cliente.id)
 
 
 @cliente_router.delete(
@@ -381,3 +357,62 @@ async def upload_clientes_csv(
         )
 
     return {"message": f"{inseridos} cliente(s) cadastrado(s) com sucesso."}
+
+
+@cliente_router.get(
+    "/buscar-clientes-todos-campos/",
+    summary="Pesquisa clientes em todas as colunas",
+    response_model=ClientePaginationOut,
+    dependencies=[Depends(requer_permissao("funcionario", "admin"))],
+)
+def buscar_clientes_todos_campos(
+    db: conexao_bd,
+    search_term: str | None = Query(
+        default=None, description="Termo de busca para nome, cpf, matrícula, subtipo"
+    ),
+    tipo: ClienteEnum | None = Query(
+        default=None,
+        description="Filtrar por tipo (externo, professor, tecnico, aluno)",
+    ),
+    page: int = Query(1, ge=1, description="Número da página (padrão 1)"),
+    page_size: int = Query(
+        10, ge=1, le=100, description="Quantidade de clientes por página (padrão 10)"
+    ),
+):
+    """
+    Pesquisa clientes em todas as colunas principais (nome, CPF, matrícula e subtipo)
+    e permite filtrar adicionalmente por tipo.
+    """
+    query = select(Cliente)
+
+    if search_term:
+        like_pattern = f"%{search_term}%"
+
+        # CPF precisa de tratamento especial (hash)
+        cpf_hash = gerar_hash(search_term) if search_term.isdigit() else None
+
+        filtros = [
+            Cliente.nome.ilike(like_pattern),
+            Cliente.matricula.ilike(like_pattern),
+            Cliente.subtipo.ilike(like_pattern),
+        ]
+        if cpf_hash:
+            filtros.append(Cliente.cpf.ilike(f"%{cpf_hash}%"))
+
+        query = query.where(or_(*filtros))
+
+    if tipo:
+        query = query.where(Cliente.tipo == tipo)
+
+    offset = (page - 1) * page_size
+    total = db.scalar(select(func.count()).select_from(query.subquery()))
+    clientes_na_pagina = db.scalars(query.offset(offset).limit(page_size)).all()
+    clientes_out = [ClienteOut.from_orm(cliente) for cliente in clientes_na_pagina]
+
+    return {
+        "total_in_page": len(clientes_na_pagina),
+        "page": page,
+        "page_size": page_size,
+        "total_pages": ceil(total / page_size) if total else 0,
+        "items": clientes_out,
+    }

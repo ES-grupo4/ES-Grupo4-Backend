@@ -1134,9 +1134,20 @@ class FuncionarioTestCase(unittest.TestCase):
 
     def test_funcionario_busca_funcionarios_por_data_saida(self):
         self.cria_funcionario()
+
+        funcionario_desativado = {
+            "cpf": "89159073454",
+            "nome": "John Tres",
+            "senha": "John123!",
+            "email": "john@tres.com",
+            "tipo": "funcionario",
+            "data_entrada": "2025-08-04",
+        }
+        self.cria_funcionario(funcionario_desativado)
+
         data_saida = date.today()
         client.post(
-            f"/funcionario/79920205451/desativar?data_saida={data_saida}",
+            f"/funcionario/89159073454/desativar?data_saida={data_saida}",
             headers=self.auth_headers,
         )
 
@@ -1148,11 +1159,11 @@ class FuncionarioTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
-            self.busca_funcionario_por_cpf("79920205451").json()["items"],
+            self.busca_funcionario_por_cpf("89159073454").json()["items"],
             response.json()["items"],
         )
         self.assertIsNone(
-            self.busca_funcionario_por_cpf("79920205451").json()["items"][0]["email"]
+            self.busca_funcionario_por_cpf("89159073454").json()["items"][0]["email"]
         )
 
     def test_busca_funcionarios_por_data_saida_sem_autorizacao(self):
