@@ -188,7 +188,7 @@ class CompraTestCase(unittest.TestCase):
             "O CSV não contém as colunas necessárias.", response.json()["detail"]
         )
 
-    def test_busca_compras(self):
+    def test_filtra_compras_sem_parametro(self):
         compra = Compra(
             usuario_id=self.cliente.usuario_id,
             horario=datetime(2025, 4, 12, 10, 50),
@@ -208,7 +208,7 @@ class CompraTestCase(unittest.TestCase):
         self.assertEqual(info["page"], 1)
         self.assertEqual(info["page_size"], 10)
 
-    def test_busca_compras_not_found(self):
+    def test_filta_compras_not_found(self):
         self.db.query(Compra).delete()
         self.db.commit()
         self.tearDown()
@@ -219,7 +219,7 @@ class CompraTestCase(unittest.TestCase):
         info = response.json()
         self.assertEqual(info["items"], [])
 
-    def test_filtra_compras(self):
+    def test_filtra_compras_com_parametro(self):
         compras = [
             {
                 "usuario_id": self.cliente.usuario_id,
@@ -255,7 +255,7 @@ class CompraTestCase(unittest.TestCase):
         for c in info:
             self.assertEqual(info["items"][0]["forma_pagamento"], "pix")
 
-    def test_filtra_compras_atributo_cliente(self):
+    def test_filtra_compras_com_parametro_de_cliente(self):
         compras = [
             {
                 "usuario_id": self.cliente.usuario_id,
@@ -288,7 +288,7 @@ class CompraTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json()["items"]), 3)
 
-    def test_filtra_compras_not_found(self):
+    def test_filtra_compras_not_found_com_parametro(self):
         response = self.client.get(
             "/compra/",
             params={"forma_pagamento": "dinheiro", "page": 1, "page_size": 1},
@@ -304,6 +304,167 @@ class CompraTestCase(unittest.TestCase):
         self.tearDown()
         response = self.client.get(
             "/compra/", params={"page": 1, "page_size": 1}, headers=self.auth_headers
+        )
+        self.assertEqual(response.status_code, 200)
+        info = response.json()
+        self.assertEqual(info["items"], [])
+
+    def test_lista_compras_sem_parametros(self):
+        compra = Compra(
+            usuario_id=self.cliente.usuario_id,
+            horario=datetime(2025, 4, 12, 10, 50),
+            local="ufcg",
+            forma_pagamento="pix",
+        )
+        self.db.add(compra)
+        self.db.commit()
+
+        response = client.get(
+            "/compra/lista",
+            params={"page": 1, "page_size": 10},
+            headers=self.auth_headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        info = response.json()
+        self.assertEqual(info["items"][0]["forma_pagamento"], "pix")
+        self.assertEqual(info["total_pages"], 1)
+        self.assertEqual(info["page"], 1)
+        self.assertEqual(info["page_size"], 10)
+
+    def test_lista_compras_not_found(self):
+        self.db.query(Compra).delete()
+        self.db.commit()
+        self.tearDown()
+        response = self.client.get(
+            "/compra/lista",
+            params={"page": 1, "page_size": 10},
+            headers=self.auth_headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        info = response.json()
+        self.assertEqual(info["items"], [])
+
+    def test_lista_compras_com_parametro(self):
+        compras = [
+            {
+                "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2025, 4, 12, 10, 50).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "pix",
+            },
+            {
+                "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2025, 6, 20, 11, 20).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "dinheiro",
+            },
+            {
+                "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2023, 4, 13, 12, 00, 0).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "pix",
+            },
+        ]
+
+        for i in compras:
+            self.client.post("/compra/", json=i, headers=self.auth_headers)
+
+        response = self.client.get(
+            "/compra/lista",
+            params={"busca": "p", "page": 1, "page_size": 10},
+            headers=self.auth_headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        info = response.json()
+        self.assertEqual(len(info["items"]), 2)
+        for c in info:
+            self.assertEqual(info["items"][0]["forma_pagamento"], "pix")
+
+    def test_lista_compras_com_parametro_de_cliente(self):
+        compras = [
+            {
+                "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2025, 4, 12, 10, 50).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "pix",
+            },
+            {
+                "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2025, 6, 20, 11, 20).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "dinheiro",
+            },
+            {
+                "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2023, 4, 13, 12, 00, 0).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "pix",
+            },
+        ]
+
+        for i in compras:
+            self.client.post("/compra/", json=i, headers=self.auth_headers)
+
+        response = self.client.get(
+            "/compra/lista",
+            params={"busca": "Fula", "page": 1, "page_size": 10},
+            headers=self.auth_headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()["items"]), 3)
+
+    def test_lista_compras_com_parametro_data(self):
+        compras = [
+            {
+                "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2025, 4, 12, 10, 50).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "pix",
+            },
+            {
+                "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2025, 6, 20, 11, 20).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "dinheiro",
+            },
+            {
+                "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2023, 4, 13, 12, 00, 0).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "pix",
+            },
+        ]
+
+        for i in compras:
+            self.client.post("/compra/", json=i, headers=self.auth_headers)
+
+        response = self.client.get(
+            "/compra/lista",
+            params={"busca": "2025-04-12T10:50:00", "page": 1, "page_size": 10},
+            headers=self.auth_headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        info = response.json()
+        self.assertEqual(len(info["items"]), 1)
+
+    def test_lista_compras_not_found_com_parametro(self):
+        response = self.client.get(
+            "/compra/lista",
+            params={"busca": "dinheiro", "page": 1, "page_size": 1},
+            headers=self.auth_headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        info = response.json()
+        self.assertEqual(info["items"], [])
+
+    def test_lista_compras_not_found_bd_vazio(self):
+        self.db.query(Compra).delete()
+        self.db.commit()
+        self.tearDown()
+        response = self.client.get(
+            "/compra/lista",
+            params={"page": 1, "page_size": 1},
+            headers=self.auth_headers,
         )
         self.assertEqual(response.status_code, 200)
         info = response.json()

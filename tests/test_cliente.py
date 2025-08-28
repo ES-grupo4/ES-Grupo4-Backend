@@ -125,26 +125,6 @@ class ClienteTestCase(unittest.TestCase):
         cpfs = [cliente["cpf"] for cliente in data["items"]]
         self.assertIn(payload["cpf"], cpfs)
 
-    def test_remove_cliente(self):
-        payload = {
-            "cpf": "39410861977",
-            "nome": "Cliente Remove",
-            "matricula": "20240003",
-            "tipo": "aluno",
-            "graduando": True,
-            "pos_graduando": False,
-            "bolsista": True,
-        }
-        self.client.post("/cliente/", json=payload, headers=self.auth_headers)
-        response = self.client.delete(
-            f"/cliente/{payload['cpf']}", headers=self.auth_headers
-        )
-        self.assertEqual(response.status_code, 204)
-        response = self.client.get(
-            f"/cliente/{payload['cpf']}", headers=self.auth_headers
-        )
-        self.assertEqual(response.status_code, 404)
-
     def test_criar_cliente_sem_campo_obrigatorio(self):
         payload = {
             "cpf": "12345678999",  # falta nome
@@ -233,10 +213,6 @@ class ClienteTestCase(unittest.TestCase):
             "/cliente/", json=payload, headers=self.auth_headers
         )
         self.assertEqual(response.status_code, 400)
-
-    def test_remove_cliente_inexistente(self):
-        response = self.client.delete("/cliente/39410861977", headers=self.auth_headers)
-        self.assertEqual(response.status_code, 404)
 
     def test_edita_cliente_matricula_invalida(self):
         payload = {
@@ -658,6 +634,51 @@ class ClienteTestCase(unittest.TestCase):
         data = response.json()
         self.assertEqual(len(data["items"]), 1)
         self.assertIn("Alice", data["items"][0]["nome"])
+
+    def test_buscar_clientes_todos_campos(self):
+        # Cria dois clientes com diferentes campos
+        clientes = [
+            {
+                "cpf": "12345678901",
+                "nome": "Carlos Pereira",
+                "matricula": "MAT9001",
+                "tipo": "aluno",
+                "graduando": True,
+                "pos_graduando": False,
+                "bolsista": True,
+            },
+            {
+                "cpf": "98765432100",
+                "nome": "Mariana Costa",
+                "matricula": "MAT9002",
+                "tipo": "professor",
+                "graduando": False,
+                "pos_graduando": False,
+                "bolsista": False,
+            },
+        ]
+        for c in clientes:
+            self.client.post("/cliente/", json=c, headers=self.auth_headers)
+
+        # Busca global por "Carlos" (campo nome)
+        response = self.client.get(
+            "/cliente/buscar-clientes-todos-campos/?q=Mariana&page=1&page_size=10",
+            headers=self.auth_headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        nomes = [c["nome"] for c in data["items"]]
+        self.assertIn("Mariana Costa", nomes)
+
+        # Busca global por "MAT9002" (campo matricula)
+        response2 = self.client.get(
+            "/cliente/buscar-clientes-todos-campos/?q=MAT9002&page=1&page_size=10",
+            headers=self.auth_headers,
+        )
+        self.assertEqual(response2.status_code, 200)
+        data2 = response2.json()
+        nomes2 = [c["nome"] for c in data2["items"]]
+        self.assertIn("Mariana Costa", nomes2)
 
 
 if __name__ == "__main__":

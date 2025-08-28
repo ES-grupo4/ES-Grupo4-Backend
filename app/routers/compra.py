@@ -3,8 +3,7 @@ from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Query, 
 import io
 from math import ceil
 import polars as pl
-from sqlalchemy import select, func
-
+from sqlalchemy import select, func, or_
 from app.core.historico_acoes import AcoesEnum, guarda_acao
 from ..models.db_setup import conexao_bd
 from ..models.models import Compra
@@ -146,6 +145,62 @@ def filtra_compra(
         query = query.where(Cliente.nome.ilike(f"%{comprador}%"))
     if categoria_comprador is not None:
         query = query.where(Cliente.tipo.ilike(f"%{categoria_comprador}%"))
+
+    offset = (page - 1) * page_size
+    total = db.scalar(select(func.count()).select_from(query.subquery()))
+    compras_na_pagina = db.scalars(query.offset(offset).limit(page_size)).all()
+    compras_out = [
+        CompraOut.model_validate(c, from_attributes=True) for c in compras_na_pagina
+    ]
+
+    return {
+        "total_in_page": len(compras_na_pagina),
+        "page": page,
+        "page_size": page_size,
+        "total_pages": ceil(total / page_size) if total else 0,
+        "items": compras_out,
+    }
+
+
+@router.get(
+    "/lista",
+    summary="Lista compras a partir de uma string aplicada a multiplas colunas",
+    tags=["Compra"],
+    response_model=CompraPaginationOut,
+    dependencies=[Depends(requer_permissao("funcionario", "admin"))],
+)
+def listar_compras(
+    db: conexao_bd,
+    busca: str | None = Query(
+        default=None,
+        description=(
+            "String aplicada a data, local, forma de pagamento, comprador e categoria comprador"
+        ),
+    ),
+    page: int = Query(1, ge=1, description="Número da página (padrão 1)"),
+    page_size: int = Query(
+        10, ge=1, le=100, description="Quantidade de compras por página (padrão 10)"
+    ),
+):
+    query = select(Compra).join(Cliente, Compra.usuario_id == Cliente.usuario_id)
+
+    if busca:
+        busca_like = f"%{busca}%"
+        filtro = []
+
+        filtro.append(Compra.local.ilike(busca_like))
+        filtro.append(Compra.forma_pagamento.ilike(busca_like))
+        filtro.append(Cliente.nome.ilike(busca_like))
+        filtro.append(Cliente.tipo.ilike(busca_like))
+
+        parsed_datetime = None
+        try:
+            parsed_datetime = datetime.fromisoformat(busca)
+        except ValueError:
+            pass
+        filtro.append(Compra.horario == parsed_datetime)
+
+        query = query.where(or_(*filtro))
 
     offset = (page - 1) * page_size
     total = db.scalar(select(func.count()).select_from(query.subquery()))
