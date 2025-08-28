@@ -1922,3 +1922,43 @@ class FuncionarioTestCase(unittest.TestCase):
         anonim = next(f for f in itens if f["id"] == func["id"])
         self.assertIsNone(anonim["nome"])
         self.assertIsNone(anonim["cpf"])
+
+    def test_pesquisar_filtra_tipo_admin_param(self):
+        # Admin padrão já existe no setUp
+        resp = client.get(
+            "/funcionario/admins?tipo_funcionario=admin", headers=self.auth_headers
+        )
+        self.assertEqual(resp.status_code, 200)
+        itens = resp.json().get("items", [])
+        self.assertGreaterEqual(len(itens), 1)
+        # Somente admins
+        self.assertTrue(all(i["tipo"] == "admin" for i in itens))
+        cpfs = {i["cpf"] for i in itens if i["cpf"] is not None}
+        self.assertIn("19896507406", cpfs)
+
+    def test_pesquisar_filtra_tipo_funcionario_param(self):
+        # Cria dois funcionarios
+        self.cria_funcionario()
+        self.cria_funcionario(
+            {
+                "cpf": "89159073454",
+                "nome": "John Tres",
+                "senha": "John123!",
+                "email": "john@tres.com",
+                "tipo": "funcionario",
+                "data_entrada": "2025-08-22",
+            }
+        )
+        resp = client.get(
+            "/funcionario/admins?tipo_funcionario=funcionario",
+            headers=self.auth_headers,
+        )
+        self.assertEqual(resp.status_code, 200)
+        itens = resp.json().get("items", [])
+        self.assertGreaterEqual(len(itens), 2)
+        # Deve conter somente funcionarios
+        self.assertTrue(all(i["tipo"] == "funcionario" for i in itens))
+        cpfs = {i["cpf"] for i in itens if i["cpf"] is not None}
+        self.assertIn("79920205451", cpfs)
+        self.assertIn("89159073454", cpfs)
+        self.assertNotIn("19896507406", cpfs)

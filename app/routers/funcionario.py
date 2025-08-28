@@ -5,7 +5,6 @@ from sqlalchemy.sql.sqltypes import String as SAString
 from math import ceil
 from pydantic import EmailStr
 from datetime import date, datetime
-import traceback
 
 from app.core.historico_acoes import AcoesEnum, guarda_acao
 
@@ -180,6 +179,9 @@ def pesquisar_funcionarios(
             "String de busca aplicada a id, nome, CPF (se for CPF válido), email, tipo e datas"
         ),
     ),
+    tipo_funcionario: FuncionarioTipo | None = Query(
+        None, description="Filtra por tipo do funcionário: admin ou funcionario"
+    ),
     desativados: bool | None = Query(
         None, description="Filtra pelos funcionários/admins desativados"
     ),
@@ -222,6 +224,8 @@ def pesquisar_funcionarios(
             conditions.append(Funcionario.data_saida == parsed_date)
 
         query = query.where(or_(*conditions))
+    if tipo_funcionario:
+        query = query.where(Funcionario.tipo == tipo_funcionario)
 
     if desativados is True:
         query = query.where(Funcionario.data_saida.is_not(None))
