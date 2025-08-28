@@ -69,7 +69,7 @@ def cadastra_funcionario(
     )
 
     db.add(usuario)
-    db.commit()
+    db.flush()
     guarda_acao(db, AcoesEnum.CADASTRAR_FUNCIONARIO, ator["cpf"], usuario.id)
     return {"message": "Funcionário cadastrado com sucesso"}
 
@@ -145,6 +145,13 @@ def busca_funcionarios(
     if data_saida:
         query = query.where(Funcionario.data_saida == data_saida)
 
+    # Excluir registros anonimizados por padrão
+    query = query.where(
+        ~and_(Funcionario.nome.is_(None), Funcionario.cpf_hash.is_(None))
+    )
+    # Ordenação estável
+    query = query.order_by(Funcionario.id.asc())
+
     offset = (page - 1) * page_size
     total = db.scalar(select(func.count()).select_from(query.subquery()))
     funcionarios_na_pagina = db.scalars(query.offset(offset).limit(page_size)).all()
@@ -201,7 +208,6 @@ def pesquisar_funcionarios(
             cpf_norm = valida_e_retorna_cpf(busca)
             conditions.append(Funcionario.cpf_hash == gerar_hash(cpf_norm))
         except Exception:
-            traceback.print_exc()
             pass
 
         parsed_date = None
@@ -231,6 +237,8 @@ def pesquisar_funcionarios(
         )
 
     offset = (page - 1) * page_size
+    # Ordenação estável para paginação determinística
+    query = query.order_by(Funcionario.id.asc())
     total = db.scalar(select(func.count()).select_from(query.subquery()))
     resultados = db.scalars(query.offset(offset).limit(page_size)).all()
     items = [FuncionarioOut.from_orm(f) for f in resultados]
