@@ -29,9 +29,15 @@ def get_usuario_por_cpf(db: conexao_bd, cpf: str):
 async def login(login_data: LoginDTO, db: conexao_bd):
     usuario = get_usuario_por_cpf(db, login_data.cpf)
 
-    if usuario and verificar_hash(login_data.senha, usuario.senha):
-        token = cria_token_de_acesso({"sub": usuario.cpf, "tipo": usuario.tipo.value})
-        return {"token": token}
+    if (
+        usuario
+        and verificar_hash(login_data.senha, usuario.senha)
+        and usuario.data_saida is None
+    ):
+        token = cria_token_de_acesso(
+            {"sub": usuario.cpf, "tipo": usuario.tipo.value, "id": usuario.id}
+        )
+        return {"token": token, "tipo": usuario.tipo.value}
 
     else:
         raise HTTPException(

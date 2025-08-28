@@ -141,30 +141,6 @@ def listar_clientes(
 
 
 @cliente_router.delete(
-    "/{cpf}",
-    summary="Remove um cliente pelo CPF",
-    status_code=status.HTTP_204_NO_CONTENT,
-)
-def remover_cliente(
-    cpf: str,
-    ator: Annotated[dict, Depends(requer_permissao("funcionario", "admin"))],
-    db: conexao_bd,
-):
-    """
-    Remove um cliente do sistema a partir do CPF.
-    """
-    cpf = valida_e_retorna_cpf(cpf)
-    cliente = db.scalar(select(Cliente).where(Cliente.cpf_hash == gerar_hash(cpf)))
-    if not cliente:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cliente não encontrado",
-        )
-    db.delete(cliente)
-    db.flush()
-    guarda_acao(db, AcoesEnum.DELETAR_CLIENTE, ator["cpf"], cliente.id)
-
-@cliente_router.delete(
     "id/{id}",
     summary="Remove um cliente pelo ID",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -186,6 +162,7 @@ def remover_cliente_id(
     db.delete(cliente)
     db.flush()
     guarda_acao(db, AcoesEnum.DELETAR_CLIENTE, ator["cpf"], cliente.id)
+
 
 @cliente_router.put(
     "/{cpf}",
