@@ -5,6 +5,7 @@ from sqlalchemy.sql.sqltypes import String as SAString
 from math import ceil
 from pydantic import EmailStr
 from datetime import date, datetime
+import traceback
 
 from app.core.historico_acoes import AcoesEnum, guarda_acao
 
@@ -200,6 +201,7 @@ def pesquisar_funcionarios(
             cpf_norm = valida_e_retorna_cpf(busca)
             conditions.append(Funcionario.cpf_hash == gerar_hash(cpf_norm))
         except Exception:
+            traceback.print_exc()
             pass
 
         parsed_date = None
