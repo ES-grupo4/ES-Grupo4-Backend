@@ -9,7 +9,7 @@ class AlunosRegistrados(BaseModel):
     bolsistas: int
 
 
-class ClientesRegistrados(BaseModel):
+class PorTipoCliente(BaseModel):
     total: int
     externos: int
     professores: int
@@ -21,7 +21,7 @@ class RelatorioOut(BaseModel):
     nome_empresa: str
     faturamento_bruto_mensal: int
 
-    clientes_registrados: ClientesRegistrados
+    clientes_registrados: PorTipoCliente
 
     funcionarios_ativos: int
     administradores_ativos: int
@@ -29,7 +29,7 @@ class RelatorioOut(BaseModel):
     funcionarios_adicionados_mes: int
     # seria interessante um desativados no mês?
 
-    compras_por_tipo: ClientesRegistrados
+    compras_por_tipo: PorTipoCliente
 
     model_config = ConfigDict(
         from_attributes=True,

@@ -11,7 +11,7 @@ from models.models import Compra, Cliente, Funcionario
 from routers.informacoes_gerais import read_info
 from ..models.db_setup import get_bd
 
-from schemas.relatorio import RelatorioOut
+from schemas.relatorio import PorTipoCliente, RelatorioOut
 
 relatorio_router = APIRouter(prefix="relatorio", tags=["Relatório"])
 router = relatorio_router
@@ -63,10 +63,10 @@ def relatorio_get(
     return RelatorioOut(
         nome_empresa=nome_empresa,
         faturamento_bruto_mensal=faturamento_mensal or 0,
-        clientes_registrados=ClientesRegistrados(),
+        clientes_registrados=PorTipoCliente(),
         funcionarios_ativos=num_funcionarios or 0,
         administradores_ativos=num_admins or 0,
         desativados=num_desativados or 0,
         funcionarios_adicionados_mes=num_adicionados or 0,
-        compras_por_tipo=ClienteRegistrados(),
+        compras_por_tipo=PorTipoCliente(),
     )
