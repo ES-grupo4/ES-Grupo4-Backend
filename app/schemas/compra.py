@@ -42,7 +42,7 @@ class CompraIn(BaseModel):
                 "horario": "2025-04-12T10:50:00",
                 "local": "humanas",
                 "forma_pagamento": "pix",
-                "preco_compra": 5,
+                "preco_compra": 598,
             }
         }
     )
