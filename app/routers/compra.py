@@ -34,6 +34,7 @@ def cadastra_compra(
         horario=compra.horario,
         local=compra.local,
         forma_pagamento=compra.forma_pagamento,
+        preco_compra=compra.preco_compra,
     )
     db.add(nova_compra)
     db.flush()
@@ -69,6 +70,7 @@ async def cadastra_compra_csv(
         "horario",
         "local",
         "forma_pagamento",
+        "preco_compra",
     }
     if not required_columns.issubset(set(tabela_csv.columns)):
         raise HTTPException(
@@ -84,6 +86,7 @@ async def cadastra_compra_csv(
                 horario=datetime.fromisoformat(linha["horario"]),
                 local=str(linha["local"]),
                 forma_pagamento=str(linha["forma_pagamento"]),
+                preco_compra=int(linha["preco_compra"]),
             )
             db.add(compra)
             db.flush()
@@ -128,6 +131,9 @@ def filtra_compra(
     categoria_comprador: str | None = Query(
         default=None, description="Filtra por categoria do comprador"
     ),
+    preco_compra: int | None = Query(
+        default=None, description="Filtra por preço da compra"
+    ),
     page: int = Query(1, ge=1, description="Número da página (padrão 1)"),
     page_size: int = Query(
         10, ge=1, le=100, description="Quantidade de compras por página (padrão 10)"
@@ -141,6 +147,8 @@ def filtra_compra(
         query = query.where(Compra.local.ilike(f"%{local}%"))
     if forma_pagamento is not None:
         query = query.where(Compra.forma_pagamento.ilike(f"%{forma_pagamento}%"))
+    if preco_compra is not None:
+        query = query.where(Compra.preco_compra == preco_compra)
     if comprador is not None:
         query = query.where(Cliente.nome.ilike(f"%{comprador}%"))
     if categoria_comprador is not None:
@@ -192,6 +200,12 @@ def listar_compras(
         filtro.append(Compra.forma_pagamento.ilike(busca_like))
         filtro.append(Cliente.nome.ilike(busca_like))
         filtro.append(Cliente.tipo.ilike(busca_like))
+
+        try:
+            busca_int = int(busca)
+            filtro.append(Compra.preco_compra == busca_int)
+        except ValueError:
+            pass
 
         parsed_datetime = None
         try:

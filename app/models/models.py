@@ -135,3 +135,4 @@ class Compra(Base):
         )
     )
     horario: Mapped[datetime] = mapped_column(DateTime, primary_key=True)
+    preco_compra: Mapped[int]
