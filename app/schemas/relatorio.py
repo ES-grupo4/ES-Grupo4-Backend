@@ -2,7 +2,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 class AlunosRegistrados(BaseModel):
-    roral: int
+    total: int
     pos_graduacao: int
     em_graduacao: int
     ambos: int
