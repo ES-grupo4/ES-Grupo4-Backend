@@ -54,7 +54,7 @@ class RelatorioOut(BaseModel):
                 "administradores_ativos": 3,
                 "desativados": 0,
                 "funcionarios_adicionados_mes": 0,
-                "total_compras_mensal": {
+                "compras_por_tipo": {
                     "total": 12000,
                     "externos": 10,
                     "professores": 150,
