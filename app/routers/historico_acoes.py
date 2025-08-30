@@ -35,10 +35,19 @@ def pega_acoes(
     id_alvo: int | None = Query(default=None),
     nome_alvo: str | None = Query(default=None),
     cpf_alvo: str | None = Query(default=None),
-    data_inicio: date | None = Query(default=None, description="Filtrar ações a partir desta data"),
-    data_fim: date | None = Query(default=None, description="Filtrar ações até esta data"),
-    mes: int | None = Query(default=None, ge=1, le=12, description="Mês específico para filtrar"),
-    ano: int | None = Query(default=None, description="Ano específico para filtrar (obrigatório se mes for usado)"),
+    data_inicio: date | None = Query(
+        default=None, description="Filtrar ações a partir desta data"
+    ),
+    data_fim: date | None = Query(
+        default=None, description="Filtrar ações até esta data"
+    ),
+    mes: int | None = Query(
+        default=None, ge=1, le=12, description="Mês específico para filtrar"
+    ),
+    ano: int | None = Query(
+        default=None,
+        description="Ano específico para filtrar (obrigatório se mes for usado)",
+    ),
     page: int = Query(1, ge=1, description="Número da página (padrão 1)"),
     page_size: int = Query(
         10, ge=1, le=100, description="Quantidade de registros por página (padrão 10)"
