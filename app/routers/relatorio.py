@@ -1,7 +1,7 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, Path
 
-from sqlalchemy import Subquery, extract, select, func
+from sqlalchemy import Subquery, select, func
 from sqlalchemy.orm import Session
 from ..core.permissoes import requer_permissao
 
