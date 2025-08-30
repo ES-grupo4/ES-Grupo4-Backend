@@ -4,6 +4,7 @@ from app.core.seguranca import criptografa_cpf, gerar_hash
 from .routers.funcionario import funcionarios_router
 from .routers.auth import auth_router
 from .routers.compra import compra_router
+from .routers.relatorio import relatorio_router
 
 from fastapi.middleware.cors import CORSMiddleware
 from .routers.informacoes_gerais import informacoes_gerais_router

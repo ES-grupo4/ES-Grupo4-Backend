@@ -680,6 +680,27 @@ class ClienteTestCase(unittest.TestCase):
         nomes2 = [c["nome"] for c in data2["items"]]
         self.assertIn("Mariana Costa", nomes2)
 
+        # Busca global por CPF da Mariana
+        response3 = self.client.get(
+            "/cliente/buscar-clientes-todos-campos/?q=98765432100&page=1&page_size=10",
+            headers=self.auth_headers,
+        )
+        self.assertEqual(response3.status_code, 200)
+        data3 = response3.json()
+        nomes3 = [c["nome"] for c in data3["items"]]
+        self.assertIn("Mariana Costa", nomes3)
+
+        # Busca global com nome e CPF juntos
+        response = self.client.get(
+            "/cliente/buscar-clientes-todos-campos/?q=Mariana%2098765432100&page=1&page_size=10",
+            headers=self.auth_headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        nomes = [c["nome"] for c in data["items"]]
+
+        # Deve encontrar a Mariana
+        self.assertIn("Mariana Costa", nomes)
 
 if __name__ == "__main__":
     unittest.main()
