@@ -92,7 +92,7 @@ def retorna_compras_por_tipo(
         .where(query_compras_mes.columns.usuario_id.in_(clientes_totais))
     )
 
-    clientes_externos = clientes_totais.where(Cliente.tipo == "externos")
+    clientes_externos = clientes_totais.where(Cliente.tipo == "externo")
     clientes_professores = clientes_totais.where(Cliente.tipo == "professor")
     clientes_tecnicos = clientes_totais.where(Cliente.tipo == "tecnico")
 
