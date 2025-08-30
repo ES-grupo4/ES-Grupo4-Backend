@@ -1,6 +1,7 @@
+from datetime import date
 from math import ceil
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import func, select
+from sqlalchemy import func, select, extract
 from sqlalchemy.orm import aliased
 
 from app.core.historico_acoes import AcoesEnum
@@ -34,6 +35,10 @@ def pega_acoes(
     id_alvo: int | None = Query(default=None),
     nome_alvo: str | None = Query(default=None),
     cpf_alvo: str | None = Query(default=None),
+    data_inicio: date | None = Query(default=None, description="Filtrar ações a partir desta data"),
+    data_fim: date | None = Query(default=None, description="Filtrar ações até esta data"),
+    mes: int | None = Query(default=None, ge=1, le=12, description="Mês específico para filtrar"),
+    ano: int | None = Query(default=None, description="Ano específico para filtrar (obrigatório se mes for usado)"),
     page: int = Query(1, ge=1, description="Número da página (padrão 1)"),
     page_size: int = Query(
         10, ge=1, le=100, description="Quantidade de registros por página (padrão 10)"
@@ -44,11 +49,11 @@ def pega_acoes(
 
     query = (
         select(HistoricoAcoes, Ator, Alvo)
-        .join(  # Select the history and both user objects
-            Ator, HistoricoAcoes.usuario_id_ator == Ator.id
-        )
+        .join(Ator, HistoricoAcoes.usuario_id_ator == Ator.id)
         .join(Alvo, HistoricoAcoes.usuario_id_alvo == Alvo.id, isouter=True)
     )
+
+    # filtros de usuário e ação
     if id_ator is not None:
         query = query.where(Ator.id == id_ator)
     if nome_ator is not None:
@@ -64,9 +69,26 @@ def pega_acoes(
     if tipo_acao is not None:
         query = query.where(HistoricoAcoes.acao == tipo_acao)
 
+    # filtros por data
+    if data_inicio is not None:
+        query = query.where(HistoricoAcoes.data >= data_inicio)
+    if data_fim is not None:
+        query = query.where(HistoricoAcoes.data <= data_fim)
+
+    # filtro por mês/ano
+    if mes is not None:
+        if ano is None:
+            raise ValueError("Se 'mes' for informado, 'ano' também deve ser fornecido")
+        query = query.where(
+            extract("month", HistoricoAcoes.data) == mes,
+            extract("year", HistoricoAcoes.data) == ano,
+        )
+
+    # paginação
     offset = (page - 1) * page_size
     total = db.scalar(select(func.count()).select_from(query.subquery()))
     acoes_na_pagina = db.execute(query.offset(offset).limit(page_size)).all()
+
     itens = [
         {
             "id": historico.id,
