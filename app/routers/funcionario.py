@@ -185,8 +185,8 @@ def pesquisar_funcionarios(
     desativados: bool | None = Query(
         None, description="Filtra pelos funcionários/admins desativados"
     ),
-    anonimizados: bool | None = Query(
-        None, description="Filtra pelos funcionários/admins anonimizados"
+    anonimizados: bool = Query(
+        False, description="Filtra pelos funcionários/admins anonimizados"
     ),
     page: int = Query(1, ge=1, description="Número da página (padrão 1)"),
     page_size: int = Query(
@@ -227,10 +227,13 @@ def pesquisar_funcionarios(
     if tipo_funcionario:
         query = query.where(Funcionario.tipo == tipo_funcionario)
 
-    if desativados is True:
-        query = query.where(Funcionario.data_saida.is_not(None))
+    if desativados is not None:
+        if desativados:
+            query = query.where(Funcionario.data_saida.is_not(None))
+        else:
+            query = query.where(Funcionario.data_saida.is_(None))
 
-    if anonimizados is True:
+    if anonimizados:
         query = query.where(
             and_(Funcionario.nome.is_(None), Funcionario.cpf_hash.is_(None))
         )
