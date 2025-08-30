@@ -9,7 +9,7 @@ import polars as pl
 
 from app.core.historico_acoes import AcoesEnum, guarda_acao
 from ..models.db_setup import conexao_bd
-from ..models.models import Cliente
+from ..models.models import Cliente, ClienteTipo, Usuario
 from ..core.seguranca import gerar_hash, criptografa_cpf
 from ..core.permissoes import requer_permissao
 from ..schemas.cliente import (
@@ -367,52 +367,56 @@ async def upload_clientes_csv(
 )
 def buscar_clientes_todos_campos(
     db: conexao_bd,
-    search_term: str | None = Query(
-        default=None, description="Termo de busca para nome, cpf, matrícula, subtipo"
+    termo_busca: str | None = Query(
+        default=None, description="Termo de busca para nome, matrícula, subtipo ou CPF"
     ),
-    tipo: ClienteEnum | None = Query(
+    tipo: ClienteTipo | None = Query(
         default=None,
         description="Filtrar por tipo (externo, professor, tecnico, aluno)",
     ),
-    page: int = Query(1, ge=1, description="Número da página (padrão 1)"),
-    page_size: int = Query(
+    pagina: int = Query(1, ge=1, description="Número da página (padrão 1)"),
+    tamanho_pagina: int = Query(
         10, ge=1, le=100, description="Quantidade de clientes por página (padrão 10)"
     ),
 ):
     """
-    Pesquisa clientes em todas as colunas principais (nome, CPF, matrícula e subtipo)
-    e permite filtrar adicionalmente por tipo.
+    Pesquisa clientes em (nome, matrícula, subtipo e CPF).
+    - Nome, matrícula e subtipo são pesquisados com ILIKE.
+    - CPF real é comparado pelo hash (igualdade).
     """
-    query = select(Cliente)
+    consulta = select(Cliente)
 
-    if search_term:
-        like_pattern = f"%{search_term}%"
-
-        # CPF precisa de tratamento especial (hash)
-        cpf_hash = gerar_hash(search_term) if search_term.isdigit() else None
+    if termo_busca:
+        padrao_like = f"%{termo_busca}%"
 
         filtros = [
-            Cliente.nome.ilike(like_pattern),
-            Cliente.matricula.ilike(like_pattern),
-            Cliente.subtipo.ilike(like_pattern),
+            Cliente.nome.ilike(padrao_like),
+            Cliente.matricula.ilike(padrao_like),
+            Cliente.subtipo.ilike(padrao_like),
         ]
-        if cpf_hash:
-            filtros.append(Cliente.cpf.ilike(f"%{cpf_hash}%"))
 
-        query = query.where(or_(*filtros))
+        # Se for apenas dígitos, assumimos que é CPF e comparamos pelo hash
+        if termo_busca.isdigit():
+            cpf_hash = gerar_hash(termo_busca)
+            filtros.append(Cliente.cpf_hash == cpf_hash)
+
+        consulta = consulta.where(or_(*filtros))
 
     if tipo:
-        query = query.where(Cliente.tipo == tipo)
+        consulta = consulta.where(Cliente.tipo == tipo)
 
-    offset = (page - 1) * page_size
-    total = db.scalar(select(func.count()).select_from(query.subquery()))
-    clientes_na_pagina = db.scalars(query.offset(offset).limit(page_size)).all()
-    clientes_out = [ClienteOut.from_orm(cliente) for cliente in clientes_na_pagina]
+    deslocamento = (pagina - 1) * tamanho_pagina
+
+    total = db.scalar(select(func.count()).select_from(consulta.subquery()))
+    clientes_encontrados = db.scalars(
+        consulta.offset(deslocamento).limit(tamanho_pagina)
+    ).all()
+    clientes_out = [ClienteOut.from_orm(cliente) for cliente in clientes_encontrados]
 
     return {
-        "total_in_page": len(clientes_na_pagina),
-        "page": page,
-        "page_size": page_size,
-        "total_pages": ceil(total / page_size) if total else 0,
+        "total_in_page": len(clientes_encontrados),
+        "page": pagina,
+        "page_size": tamanho_pagina,
+        "total_pages": ceil(total / tamanho_pagina) if total else 0,
         "items": clientes_out,
     }
