@@ -10,6 +10,7 @@ from .routers.informacoes_gerais import informacoes_gerais_router
 
 from .routers.cliente import cliente_router
 from .routers.historico_acoes import acoes_router
+from .routers.relatorio import relatorio_router
 from .models.db_setup import engine
 from .models.models import Funcionario
 
@@ -65,3 +66,4 @@ app.include_router(auth_router)
 app.include_router(compra_router)
 app.include_router(cliente_router)
 app.include_router(acoes_router)
+app.include_router(relatorio_router)
