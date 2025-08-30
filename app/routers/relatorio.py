@@ -3,15 +3,15 @@ from fastapi import APIRouter, Depends, Path
 
 from sqlalchemy import Subquery, extract, select, func
 from sqlalchemy.orm import Session
-from core.permissoes import requer_permissao
+from ..core.permissoes import requer_permissao
 
-from models.models import Compra, Cliente, Funcionario
-from routers.informacoes_gerais import read_info
+from ..models.models import Compra, Cliente, Funcionario
+from ..routers.informacoes_gerais import read_info
 from ..models.db_setup import get_bd
 
-from schemas.relatorio import AlunosRegistrados, PorTipoCliente, RelatorioOut
+from ..schemas.relatorio import AlunosRegistrados, PorTipoCliente, RelatorioOut
 
-relatorio_router = APIRouter(prefix="relatorio", tags=["Relatório"])
+relatorio_router = APIRouter(prefix="/relatorio", tags=["Relatório"])
 router = relatorio_router
 
 
