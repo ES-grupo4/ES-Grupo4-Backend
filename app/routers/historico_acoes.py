@@ -27,10 +27,11 @@ router = acoes_router
     "/",
     summary="Lista ações realizadas por funcionários",
     response_model=AcaoPaginationOut,
+    dependencies=[Depends(requer_permissao("admin"))],
+
 )
 def pega_acoes(
     db: conexao_bd,
-    ator: Annotated[dict, Depends(requer_permissao("admin"))],
     tipo_acao: AcoesEnum | None = Query(default=None),
     id_ator: int | None = Query(default=None),
     nome_ator: str | None = Query(default=None),
