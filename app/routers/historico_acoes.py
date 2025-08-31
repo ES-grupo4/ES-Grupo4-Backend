@@ -1,11 +1,13 @@
 from datetime import date
+import json
 from math import ceil
-from fastapi import APIRouter, Depends, Query
+from typing import Annotated
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select, extract
 from sqlalchemy.orm import aliased
 
 from app.core.historico_acoes import AcoesEnum
-from app.core.seguranca import descriptografa_cpf
+from app.core.seguranca import descriptografa_cpf, gerar_hash
 from app.schemas.acoes import AcaoPaginationOut
 
 from ..core.permissoes import requer_permissao
@@ -28,6 +30,7 @@ router = acoes_router
 )
 def pega_acoes(
     db: conexao_bd,
+    ator: Annotated[dict, Depends(requer_permissao("admin"))],
     tipo_acao: AcoesEnum | None = Query(default=None),
     id_ator: int | None = Query(default=None),
     nome_ator: str | None = Query(default=None),
@@ -74,7 +77,7 @@ def pega_acoes(
     if nome_alvo is not None:
         query = query.where(Alvo.nome == nome_alvo)
     if cpf_alvo is not None:
-        query = query.where(Alvo.cpf == cpf_alvo)
+        query = query.where(Alvo.cpf_hash == gerar_hash(cpf_alvo))
     if tipo_acao is not None:
         query = query.where(HistoricoAcoes.acao == tipo_acao)
 
@@ -87,7 +90,9 @@ def pega_acoes(
     # filtro por mês/ano
     if mes is not None:
         if ano is None:
-            raise ValueError("Se 'mes' for informado, 'ano' também deve ser fornecido")
+            raise HTTPException(
+                400, "Se 'mes' for informado, 'ano' também deve ser fornecido"
+            )
         query = query.where(
             extract("month", HistoricoAcoes.data) == mes,
             extract("year", HistoricoAcoes.data) == ano,
@@ -109,7 +114,7 @@ def pega_acoes(
             "alvo_nome": alvo.nome if alvo else None,
             "alvo_cpf": descriptografa_cpf(alvo.cpf_cript) if alvo else None,
             "data": historico.data,
-            "info_adicional": historico.info,
+            "info_adicional": json.loads(historico.info) if historico.info else {},
         }
         for historico, ator, alvo in acoes_na_pagina
     ]
