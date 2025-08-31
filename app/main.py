@@ -13,7 +13,7 @@ from .routers.cliente import cliente_router
 from .routers.historico_acoes import acoes_router
 from .routers.relatorio import relatorio_router
 from .models.db_setup import engine
-from .models.models import Funcionario
+from .models.models import Funcionario, InformacoesGerais
 
 from contextlib import asynccontextmanager
 from sqlalchemy.orm import Session
@@ -21,7 +21,7 @@ from datetime import date
 
 
 @asynccontextmanager
-async def setUpAdmin(app: FastAPI):
+async def setUp(app: FastAPI):
     db = Session(engine)
     senha = gerar_hash("John123!")
     cpf_hash = gerar_hash("19896507406")
@@ -42,11 +42,24 @@ async def setUpAdmin(app: FastAPI):
         admin = Funcionario(**admin_data)
         db.add(admin)
         db.commit()
+    if not db.query(InformacoesGerais).first():
+        info_gerais_data = {
+            "nome_empresa": "RU sistema",
+            "preco_almoco": 1200,
+            "preco_meia_almoco": 600,
+            "preco_jantar": 1000,
+            "preco_meia_jantar": 500,
+            "inicio_almoco": "12:30:00",
+            "fim_almoco": "14:00:00",
+            "inicio_jantar": "17:00:00",
+            "fim_jantar": "20:00:00",
+        }
+        db.add(InformacoesGerais(**info_gerais_data))
     yield
 
 
 # Só por enquanto
-app = FastAPI(lifespan=setUpAdmin)
+app = FastAPI(lifespan=setUp)
 
 # =====================================
 # Liberando acesso da api
