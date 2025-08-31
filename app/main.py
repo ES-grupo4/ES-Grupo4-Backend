@@ -17,7 +17,7 @@ from .models.models import Funcionario, InformacoesGerais
 
 from contextlib import asynccontextmanager
 from sqlalchemy.orm import Session
-from datetime import date
+from datetime import date, time
 
 
 @asynccontextmanager
@@ -49,12 +49,14 @@ async def setUp(app: FastAPI):
             "preco_meia_almoco": 600,
             "preco_jantar": 1000,
             "preco_meia_jantar": 500,
-            "inicio_almoco": "12:30:00",
-            "fim_almoco": "14:00:00",
-            "inicio_jantar": "17:00:00",
-            "fim_jantar": "20:00:00",
+            "inicio_almoco": time(12, 30, 00),
+            "fim_almoco": time(14, 00, 00),
+            "inicio_jantar": time(17, 00, 00),
+            "fim_jantar": time(20, 00, 00),
         }
         db.add(InformacoesGerais(**info_gerais_data))
+        db.commit()
+
     yield
 
 
