@@ -4,11 +4,12 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status, Query
 from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import or_
 import polars as pl
 
 from app.core.historico_acoes import AcoesEnum, guarda_acao
 from ..models.db_setup import conexao_bd
-from ..models.models import Cliente
+from ..models.models import Cliente, ClienteTipo, Usuario
 from ..core.seguranca import gerar_hash, criptografa_cpf
 from ..core.permissoes import requer_permissao
 from ..schemas.cliente import (
@@ -140,20 +141,19 @@ def listar_clientes(
 
 
 @cliente_router.delete(
-    "/{cpf}",
-    summary="Remove um cliente pelo CPF",
+    "id/{id}",
+    summary="Remove um cliente pelo ID",
     status_code=status.HTTP_204_NO_CONTENT,
 )
-def remover_cliente(
-    cpf: str,
+def remover_cliente_id(
+    id: int,
     ator: Annotated[dict, Depends(requer_permissao("funcionario", "admin"))],
     db: conexao_bd,
 ):
     """
-    Remove um cliente do sistema a partir do CPF.
+    Remove um cliente do sistema a partir do ID.
     """
-    cpf = valida_e_retorna_cpf(cpf)
-    cliente = db.scalar(select(Cliente).where(Cliente.cpf_hash == gerar_hash(cpf)))
+    cliente = db.scalar(select(Cliente).where(Cliente.id == id))
     if not cliente:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -241,7 +241,7 @@ def buscar_cliente(cpf: str, db: conexao_bd):
 
 
 @cliente_router.get(
-    "/{id}",
+    "/id/{id}",
     summary="Busca um cliente pelo ID",
     response_model=ClienteOut,
 )
@@ -357,3 +357,66 @@ async def upload_clientes_csv(
         )
 
     return {"message": f"{inseridos} cliente(s) cadastrado(s) com sucesso."}
+
+
+@cliente_router.get(
+    "/buscar-clientes-todos-campos/",
+    summary="Pesquisa clientes em todas as colunas",
+    response_model=ClientePaginationOut,
+    dependencies=[Depends(requer_permissao("funcionario", "admin"))],
+)
+def buscar_clientes_todos_campos(
+    db: conexao_bd,
+    termo_busca: str | None = Query(
+        default=None, description="Termo de busca para nome, matrícula, subtipo ou CPF"
+    ),
+    tipo: ClienteTipo | None = Query(
+        default=None,
+        description="Filtrar por tipo (externo, professor, tecnico, aluno)",
+    ),
+    pagina: int = Query(1, ge=1, description="Número da página (padrão 1)"),
+    tamanho_pagina: int = Query(
+        10, ge=1, le=100, description="Quantidade de clientes por página (padrão 10)"
+    ),
+):
+    """
+    Pesquisa clientes em (nome, matrícula, subtipo e CPF).
+    - Nome, matrícula e subtipo são pesquisados com ILIKE.
+    - CPF real é comparado pelo hash (igualdade).
+    """
+    consulta = select(Cliente)
+
+    if termo_busca:
+        padrao_like = f"%{termo_busca}%"
+
+        filtros = [
+            Cliente.nome.ilike(padrao_like),
+            Cliente.matricula.ilike(padrao_like),
+            Cliente.subtipo.ilike(padrao_like),
+        ]
+
+        # Se for apenas dígitos, assumimos que é CPF e comparamos pelo hash
+        if termo_busca.isdigit():
+            cpf_hash = gerar_hash(termo_busca)
+            filtros.append(Cliente.cpf_hash == cpf_hash)
+
+        consulta = consulta.where(or_(*filtros))
+
+    if tipo:
+        consulta = consulta.where(Cliente.tipo == tipo)
+
+    deslocamento = (pagina - 1) * tamanho_pagina
+
+    total = db.scalar(select(func.count()).select_from(consulta.subquery()))
+    clientes_encontrados = db.scalars(
+        consulta.offset(deslocamento).limit(tamanho_pagina)
+    ).all()
+    clientes_out = [ClienteOut.from_orm(cliente) for cliente in clientes_encontrados]
+
+    return {
+        "total_in_page": len(clientes_encontrados),
+        "page": pagina,
+        "page_size": tamanho_pagina,
+        "total_pages": ceil(total / tamanho_pagina) if total else 0,
+        "items": clientes_out,
+    }

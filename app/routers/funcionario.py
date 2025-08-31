@@ -1,9 +1,10 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_, cast, and_
+from sqlalchemy.sql.sqltypes import String as SAString
 from math import ceil
 from pydantic import EmailStr
-from datetime import date
+from datetime import date, datetime
 
 from app.core.historico_acoes import AcoesEnum, guarda_acao
 
@@ -128,7 +129,7 @@ def busca_funcionarios(
         10, ge=1, le=100, description="Quantidade de registros por página (padrão 10)"
     ),
 ):
-    query = select(Funcionario).where(Funcionario.tipo == "funcionario")
+    query = select(Funcionario).where(cast(Funcionario.tipo, SAString) == "funcionario")
 
     if id:
         query = query.where(Funcionario.id == id)
@@ -143,6 +144,13 @@ def busca_funcionarios(
     if data_saida:
         query = query.where(Funcionario.data_saida == data_saida)
 
+    # Excluir registros anonimizados por padrão
+    query = query.where(
+        ~and_(Funcionario.nome.is_(None), Funcionario.cpf_hash.is_(None))
+    )
+    # Ordenação estável
+    query = query.order_by(Funcionario.id.asc())
+
     offset = (page - 1) * page_size
     total = db.scalar(select(func.count()).select_from(query.subquery()))
     funcionarios_na_pagina = db.scalars(query.offset(offset).limit(page_size)).all()
@@ -154,6 +162,100 @@ def busca_funcionarios(
         "page_size": page_size,
         "total_pages": ceil(total / page_size) if total else 0,
         "items": funcionarios_out,
+    }
+
+
+@router.get(
+    "/admins",
+    summary="Pesquisa paginada de funcionários/admins (uma string aplicada a várias colunas)",
+    response_model=FuncionarioPaginationOut,
+    dependencies=[Depends(requer_permissao("funcionario", "admin"))],
+)
+def pesquisar_funcionarios(
+    db: conexao_bd,
+    busca: str | None = Query(
+        default=None,
+        description=(
+            "String de busca aplicada a id, nome, CPF (se for CPF válido), email, tipo e datas"
+        ),
+    ),
+    tipo_funcionario: FuncionarioTipo | None = Query(
+        None, description="Filtra por tipo do funcionário: admin ou funcionario"
+    ),
+    desativados: bool | None = Query(
+        None, description="Filtra pelos funcionários/admins desativados"
+    ),
+    anonimizados: bool = Query(
+        False, description="Filtra pelos funcionários/admins anonimizados"
+    ),
+    page: int = Query(1, ge=1, description="Número da página (padrão 1)"),
+    page_size: int = Query(
+        10, ge=1, le=100, description="Quantidade de registros por página"
+    ),
+):
+    query = select(Funcionario)
+
+    if busca:
+        busca_like = f"%{busca}%"
+        conditions = []
+
+        conditions.append(Funcionario.nome.ilike(busca_like))
+        conditions.append(Funcionario.email.ilike(busca_like))
+        conditions.append(cast(Funcionario.tipo, SAString).ilike(busca_like))
+
+        if busca.isdigit():
+            conditions.append(Funcionario.id == int(busca))
+
+        try:
+            cpf_norm = valida_e_retorna_cpf(busca)
+            conditions.append(Funcionario.cpf_hash == gerar_hash(cpf_norm))
+        except Exception:
+            pass
+
+        parsed_date = None
+        for fmt in ("%Y-%m-%d", "%d/%m/%Y"):
+            try:
+                parsed_date = datetime.strptime(busca, fmt).date()
+                break
+            except Exception:
+                continue
+        if parsed_date:
+            conditions.append(Funcionario.data_entrada == parsed_date)
+            conditions.append(Funcionario.data_saida == parsed_date)
+
+        query = query.where(or_(*conditions))
+    if tipo_funcionario:
+        query = query.where(Funcionario.tipo == tipo_funcionario)
+
+    if desativados is not None:
+        if desativados:
+            query = query.where(Funcionario.data_saida.is_not(None))
+        else:
+            query = query.where(Funcionario.data_saida.is_(None))
+
+    if anonimizados:
+        query = query.where(
+            and_(Funcionario.nome.is_(None), Funcionario.cpf_hash.is_(None))
+        )
+    else:
+        # Excluir registros anonimizados por padrão
+        query = query.where(
+            ~and_(Funcionario.nome.is_(None), Funcionario.cpf_hash.is_(None))
+        )
+
+    offset = (page - 1) * page_size
+    # Ordenação estável para paginação determinística
+    query = query.order_by(Funcionario.id.asc())
+    total = db.scalar(select(func.count()).select_from(query.subquery()))
+    resultados = db.scalars(query.offset(offset).limit(page_size)).all()
+    items = [FuncionarioOut.from_orm(f) for f in resultados]
+
+    return {
+        "total_in_page": len(resultados),
+        "page": page,
+        "page_size": page_size,
+        "total_pages": ceil(total / page_size) if total else 0,
+        "items": items,
     }
 
 
@@ -182,7 +284,7 @@ def busca_admins(
         10, ge=1, le=100, description="Quantidade de registros por página (padrão 10)"
     ),
 ):
-    query = select(Funcionario).where(Funcionario.tipo == "admin")
+    query = select(Funcionario).where(cast(Funcionario.tipo, SAString) == "admin")
 
     if id:
         query = query.where(Funcionario.id == id)
@@ -269,7 +371,7 @@ def desativa_funcionario(
 
 @router.post(
     "/{id}/anonimizar",
-    summary="Anonimiza um funcionário pelo CPF (LGPD)",
+    summary="Anonimiza um funcionário pelo ID (LGPD)",
 )
 def anonimiza_funcionario(
     ator: Annotated[dict, Depends(requer_permissao("admin"))], db: conexao_bd, id: int
@@ -289,6 +391,7 @@ def anonimiza_funcionario(
     funcionario.cpf_hash = None
     funcionario.cpf_cript = None
     funcionario.nome = None
+    funcionario.email = None
 
     db.flush()
     guarda_acao(db, AcoesEnum.ANONIMIZAR_FUNCIONARIO, ator["cpf"], funcionario.id)

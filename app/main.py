@@ -4,12 +4,14 @@ from app.core.seguranca import criptografa_cpf, gerar_hash
 from .routers.funcionario import funcionarios_router
 from .routers.auth import auth_router
 from .routers.compra import compra_router
+from .routers.relatorio import relatorio_router
 
 from fastapi.middleware.cors import CORSMiddleware
 from .routers.informacoes_gerais import informacoes_gerais_router
 
 from .routers.cliente import cliente_router
 from .routers.historico_acoes import acoes_router
+from .routers.relatorio import relatorio_router
 from .models.db_setup import engine
 from .models.models import Funcionario
 
@@ -59,9 +61,10 @@ app.add_middleware(
 )
 # =====================================
 
+app.include_router(auth_router)
+app.include_router(acoes_router)
+app.include_router(cliente_router)
+app.include_router(compra_router)
 app.include_router(funcionarios_router)
 app.include_router(informacoes_gerais_router)
-app.include_router(auth_router)
-app.include_router(compra_router)
-app.include_router(cliente_router)
-app.include_router(acoes_router)
+app.include_router(relatorio_router)

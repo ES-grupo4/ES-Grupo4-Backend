@@ -15,6 +15,7 @@ class CompraOut(BaseModel):
     horario: datetime
     local: str
     forma_pagamento: str
+    preco_compra: int
 
     class Config:
         from_attributes = True
@@ -33,6 +34,7 @@ class CompraIn(BaseModel):
     horario: datetime
     local: str
     forma_pagamento: FormaPagamentoEnum
+    preco_compra: int
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -40,6 +42,7 @@ class CompraIn(BaseModel):
                 "horario": "2025-04-12T10:50:00",
                 "local": "humanas",
                 "forma_pagamento": "pix",
+                "preco_compra": 598,
             }
         }
     )
