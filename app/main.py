@@ -61,10 +61,10 @@ app.add_middleware(
 )
 # =====================================
 
+app.include_router(auth_router)
+app.include_router(acoes_router)
+app.include_router(cliente_router)
+app.include_router(compra_router)
 app.include_router(funcionarios_router)
 app.include_router(informacoes_gerais_router)
-app.include_router(auth_router)
-app.include_router(compra_router)
-app.include_router(cliente_router)
-app.include_router(acoes_router)
 app.include_router(relatorio_router)
