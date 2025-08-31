@@ -234,7 +234,7 @@ def listar_compras(
 @router.get(
     "/cliente/{cliente_id}/{year}/{month}",
     summary="Retorna as compras de um cliente em um determinado mês e ano",
-    response_model=list[CompraOut]
+    response_model=list[CompraOut],
     dependencies=[Depends(requer_permissao("funcionario", "admin"))],
 )
 def get_compras_por_cliente_e_mes(
