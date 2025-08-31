@@ -141,21 +141,21 @@ class RelatorioTestCase(unittest.TestCase):
 
         compras = [
             {
-                "usuario_id": 1,  # cliente externo
+                "usuario_id": 2,  # cliente externo
                 "horario": datetime(2025, 8, 15, 10, 0, 0),
                 "local": "humanas",
                 "forma_pagamento": "pix",
                 "preco_compra": 1196,
             },
             {
-                "usuario_id": 2,  # professor
+                "usuario_id": 3,  # professor
                 "horario": datetime(2025, 8, 20, 14, 0, 0),
                 "local": "exatas",
                 "forma_pagamento": "dinheiro",
                 "preco_compra": 1196,
             },
             {
-                "usuario_id": 4,  # aluno graduação
+                "usuario_id": 5,  # aluno graduação
                 "horario": datetime(2025, 8, 25, 16, 0, 0),
                 "local": "humanas",
                 "forma_pagamento": "cartao",
@@ -242,6 +242,7 @@ class RelatorioTestCase(unittest.TestCase):
             "desativados",
             "funcionarios_adicionados_mes",
             "compras_por_tipo",
+            "faturamento_por_tipo",
         }
         self.assertEqual(set(data.keys()), keys_esperadas)
 
@@ -255,6 +256,11 @@ class RelatorioTestCase(unittest.TestCase):
 
         self.assertEqual(set(data["compras_por_tipo"].keys()), clientes_keys)
         self.assertEqual(set(data["compras_por_tipo"]["alunos"].keys()), alunos_keys)
+
+        self.assertEqual(set(data["faturamento_por_tipo"].keys()), clientes_keys)
+        self.assertEqual(
+            set(data["faturamento_por_tipo"]["alunos"].keys()), alunos_keys
+        )
 
     def test_relatorio_mes_valido_com_dados(self):
         response = client.get("/relatorio/2025/8", headers=self.auth_headers)
@@ -295,12 +301,24 @@ class RelatorioTestCase(unittest.TestCase):
 
         # Verificar compras por tipo
         compras = data["compras_por_tipo"]
-        self.assertEqual(compras["total"], 2)
+        self.assertEqual(compras["total"], 3)
         self.assertEqual(compras["externos"], 1)
-        self.assertEqual(compras["professores"], 0)
-        self.assertEqual(compras["tecnicos"], 1)
-        self.assertEqual(compras["alunos"]["total"], 0)
-        self.assertEqual(compras["alunos"]["em_graduacao"], 0)
+        self.assertEqual(compras["professores"], 1)
+        self.assertEqual(compras["tecnicos"], 0)
+        self.assertEqual(compras["alunos"]["total"], 1)
+        self.assertEqual(compras["alunos"]["em_graduacao"], 1)
+
+        # Verificar faturamento por tipo
+        faturamento = data["faturamento_por_tipo"]
+        self.assertEqual(faturamento["total"], 2988)
+        self.assertEqual(faturamento["externos"], 1196)
+        self.assertEqual(faturamento["professores"], 1196)
+        self.assertEqual(faturamento["tecnicos"], 0)
+        self.assertEqual(faturamento["alunos"]["total"], 596)
+        self.assertEqual(faturamento["alunos"]["pos_graduacao"], 0)
+        self.assertEqual(faturamento["alunos"]["em_graduacao"], 596)
+        self.assertEqual(faturamento["alunos"]["ambos"], 0)
+        self.assertEqual(faturamento["alunos"]["bolsistas"], 0)
 
     def test_relatorio_mes_sem_dados(self):
         response = client.get("/relatorio/2024/1", headers=self.auth_headers)

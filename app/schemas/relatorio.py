@@ -31,6 +31,8 @@ class RelatorioOut(BaseModel):
 
     compras_por_tipo: PorTipoCliente
 
+    faturamento_por_tipo: PorTipoCliente
+
     model_config = ConfigDict(
         from_attributes=True,
         json_schema_extra={
