@@ -1,7 +1,7 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, Path
 
-from sqlalchemy import Subquery, extract, select, func
+from sqlalchemy import Subquery, select, func
 from sqlalchemy.orm import Session
 from ..core.permissoes import requer_permissao
 
@@ -200,16 +200,19 @@ def relatorio_get(
     nome_empresa = read_info(bd).nome_empresa
 
     query_compras_mes = select(Compra).where(
-        extract("year", Compra.horario) == ano,
-        extract("month", Compra.horario) == mes,
+        func.strftime("%Y", Compra.horario) == str(ano),
+        func.strftime("%m", Compra.horario) == f"{mes:02d}",
     )
     faturamento_mensal = bd.scalar(
-        select(func.sum(Compra.preco_compra)).select_from(query_compras_mes.subquery())
+        select(func.sum(Compra.preco_compra)).where(
+            func.strftime("%Y", Compra.horario) == str(ano),
+            func.strftime("%m", Compra.horario) == f"{mes:02d}",
+        )
     )
 
     query_funcionarios_novos = select(Funcionario).where(
-        extract("year", Funcionario.data_entrada) == ano,
-        extract("month", Funcionario.data_entrada) == mes,
+        func.strftime("%Y", Funcionario.data_entrada) == str(ano),
+        func.strftime("%m", Funcionario.data_entrada) == f"{mes:02d}",
     )
     num_adicionados = bd.scalar(
         select(func.count()).select_from(query_funcionarios_novos.subquery())
