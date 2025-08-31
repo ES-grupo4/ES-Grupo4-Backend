@@ -69,6 +69,19 @@ class RelatorioOut(BaseModel):
                         "bolsistas": 400,
                     },
                 },
+                "faturamento_por_tipo": {
+                    "total": 7760,
+                    "externos": 1196,
+                    "professores": 1196,
+                    "tecnicos": 1196,
+                    "alunos": {
+                        "total": 4172,
+                        "em_graduacao": 1788,
+                        "pos_graduacao": 1192,
+                        "ambos": 596,
+                        "bolsistas": 596
+                    }
+                }
             }
         },
     )
