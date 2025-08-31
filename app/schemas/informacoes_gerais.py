@@ -17,10 +17,10 @@ class InformacoesGeraisDTO(BaseModel):
         json_schema_extra={
             "example": {
                 "nome_empresa": "Fulano de Sal",
-                "preco_almoco": 12,
-                "preco_meia_almoco": 6,
-                "preco_jantar": 10,
-                "preco_meia_jantar": 5,
+                "preco_almoco": 1200,
+                "preco_meia_almoco": 600,
+                "preco_jantar": 1000,
+                "preco_meia_jantar": 500,
                 "inicio_almoco": "12:30:00",
                 "fim_almoco": "14:00:00",
                 "inicio_jantar": "17:00:00",
