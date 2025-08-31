@@ -9,7 +9,7 @@ from app.core.seguranca import (
 )
 from datetime import date
 from app.main import app
-from app.models.models import Compra, Funcionario, Cliente, InformacoesGerais
+from app.models.models import Compra, Funcionario, Cliente
 from app.models.db_setup import engine
 from sqlalchemy.orm import Session
 from datetime import datetime
@@ -62,22 +62,6 @@ class CompraTestCase(unittest.TestCase):
         self.db: Session = Session(bind=engine)
         self.client = client
         self.db.query(Compra).delete()
-        self.db.commit()
-
-        self.informacoes_gerais = {
-            "nome_empresa": "Fulano de Sal",
-            "preco_almoco": 1200,
-            "preco_meia_almoco": 600,
-            "preco_jantar": 1000,
-            "preco_meia_jantar": 500,
-            "inicio_almoco": "12:30:00",
-            "fim_almoco": "14:00:00",
-            "inicio_jantar": "17:00:00",
-            "fim_jantar": "20:00:00",
-        }
-
-        informacoes = InformacoesGerais(**self.informacoes_gerais)
-        self.db.add(informacoes)
         self.db.commit()
 
         # Mockando um funcionario pra ter permissão nas rotas
