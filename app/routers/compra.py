@@ -261,3 +261,29 @@ def listar_compras(
         "total_pages": ceil(total / page_size) if total else 0,
         "items": compras_out,
     }
+
+
+@router.get(
+    "/cliente/{cliente_id}/{year}/{month}",
+    summary="Retorna as compras de um cliente em um determinado mês e ano",
+    response_model=list[CompraOut],
+    dependencies=[Depends(requer_permissao("funcionario", "admin"))],
+)
+def get_compras_por_cliente_e_mes(
+    cliente_id: int,
+    year: int,
+    month: int,
+    db: conexao_bd,
+):
+    """
+    Retorna todas as compras de um cliente em um determinado mês e ano.
+    """
+    query = (
+        select(Compra)
+        .join(Cliente, Compra.usuario_id == Cliente.id)
+        .where(Cliente.id == cliente_id)
+        .where(func.extract("year", Compra.horario) == year)
+        .where(func.extract("month", Compra.horario) == month)
+    )
+    compras = db.scalars(query).all()
+    return compras
