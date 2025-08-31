@@ -231,6 +231,7 @@ def listar_compras(
         "items": compras_out,
     }
 
+
 @router.get(
     "/cliente/{cliente_id}/{year}/{month}",
     summary="Retorna as compras de um cliente em um determinado mês e ano",
@@ -254,4 +255,4 @@ def get_compras_por_cliente_e_mes(
         .where(func.extract("month", Compra.horario) == month)
     )
     compras = db.scalars(query).all()
-    return [CompraOut.model_validate(c, from_attributes=True) for c in compras]
+    return compras
