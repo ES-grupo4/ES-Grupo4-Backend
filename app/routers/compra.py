@@ -98,8 +98,8 @@ async def cadastra_compra_csv(
                 preco_compra=int(linha["preco_compra"]),
             )
             hora_compra = compra.horario.time()
-            if(not(info_gerais.inicio_almoco <= hora_compra <= info_gerais.inicio_almoco) or 
-               not(info_gerais.inicio_jantar <= hora_compra <= info_gerais.inicio_jantar)):
+            if not((info_gerais.inicio_almoco <= hora_compra <= info_gerais.inicio_almoco) or 
+               (info_gerais.inicio_jantar <= hora_compra <= info_gerais.inicio_jantar)):
                 raise HTTPException(
                 400,
                 "Compra realizada fora dos horários de almoço e jantar")
