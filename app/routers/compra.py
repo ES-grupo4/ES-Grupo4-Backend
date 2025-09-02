@@ -39,11 +39,12 @@ def cadastra_compra(
     )
     info_gerais = read_info(db)
     hora_compra = compra.horario.time()
-    if not((info_gerais.inicio_almoco <= hora_compra <= info_gerais.inicio_almoco) or 
-        (info_gerais.inicio_jantar <= hora_compra <= info_gerais.inicio_jantar)):
-            raise HTTPException(
-            400,
-            "Compra realizada fora dos horários de almoço e jantar")
+    if (info_gerais.inicio_almoco <= hora_compra <= info_gerais.fim_almoco) or (
+        info_gerais.inicio_jantar <= hora_compra <= info_gerais.fim_jantar
+    ):
+        raise HTTPException(
+            400, "Compra realizada fora dos horários de almoço e jantar"
+        )
     db.add(nova_compra)
     db.flush()
     guarda_acao(
@@ -98,11 +99,17 @@ async def cadastra_compra_csv(
                 preco_compra=int(linha["preco_compra"]),
             )
             hora_compra = compra.horario.time()
-            if not((info_gerais.inicio_almoco <= hora_compra <= info_gerais.inicio_almoco) or 
-               (info_gerais.inicio_jantar <= hora_compra <= info_gerais.inicio_jantar)):
+            if not (
+                (info_gerais.inicio_almoco <= hora_compra <= info_gerais.inicio_almoco)
+                or (
+                    info_gerais.inicio_jantar
+                    <= hora_compra
+                    <= info_gerais.inicio_jantar
+                )
+            ):
                 raise HTTPException(
-                400,
-                "Compra realizada fora dos horários de almoço e jantar")
+                    400, "Compra realizada fora dos horários de almoço e jantar"
+                )
             db.add(compra)
             db.flush()
             compras.append(compra)
