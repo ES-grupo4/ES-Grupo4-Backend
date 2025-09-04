@@ -4,22 +4,24 @@ from app.core.seguranca import criptografa_cpf, gerar_hash
 from .routers.funcionario import funcionarios_router
 from .routers.auth import auth_router
 from .routers.compra import compra_router
+from .routers.relatorio import relatorio_router
 
 from fastapi.middleware.cors import CORSMiddleware
 from .routers.informacoes_gerais import informacoes_gerais_router
 
 from .routers.cliente import cliente_router
 from .routers.historico_acoes import acoes_router
+from .routers.relatorio import relatorio_router
 from .models.db_setup import engine
-from .models.models import Funcionario
+from .models.models import Funcionario, InformacoesGerais
 
 from contextlib import asynccontextmanager
 from sqlalchemy.orm import Session
-from datetime import date
+from datetime import date, time
 
 
 @asynccontextmanager
-async def setUpAdmin(app: FastAPI):
+async def setUp(app: FastAPI):
     db = Session(engine)
     senha = gerar_hash("John123!")
     cpf_hash = gerar_hash("19896507406")
@@ -40,11 +42,26 @@ async def setUpAdmin(app: FastAPI):
         admin = Funcionario(**admin_data)
         db.add(admin)
         db.commit()
+    if not db.query(InformacoesGerais).first():
+        info_gerais_data = {
+            "nome_empresa": "RU sistema",
+            "preco_almoco": 1200,
+            "preco_meia_almoco": 600,
+            "preco_jantar": 1000,
+            "preco_meia_jantar": 500,
+            "inicio_almoco": time(12, 30, 00),
+            "fim_almoco": time(14, 00, 00),
+            "inicio_jantar": time(17, 00, 00),
+            "fim_jantar": time(20, 00, 00),
+        }
+        db.add(InformacoesGerais(**info_gerais_data))
+        db.commit()
+
     yield
 
 
 # Só por enquanto
-app = FastAPI(lifespan=setUpAdmin)
+app = FastAPI(lifespan=setUp)
 
 # =====================================
 # Liberando acesso da api
@@ -59,9 +76,10 @@ app.add_middleware(
 )
 # =====================================
 
+app.include_router(auth_router)
+app.include_router(acoes_router)
+app.include_router(cliente_router)
+app.include_router(compra_router)
 app.include_router(funcionarios_router)
 app.include_router(informacoes_gerais_router)
-app.include_router(auth_router)
-app.include_router(compra_router)
-app.include_router(cliente_router)
-app.include_router(acoes_router)
+app.include_router(relatorio_router)

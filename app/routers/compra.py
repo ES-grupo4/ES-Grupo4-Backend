@@ -4,13 +4,15 @@ import io
 from math import ceil
 import polars as pl
 from sqlalchemy import select, func, or_
+from sqlalchemy.exc import IntegrityError
 from app.core.historico_acoes import AcoesEnum, guarda_acao
+from app.routers.informacoes_gerais import read_info
 from ..models.db_setup import conexao_bd
 from ..models.models import Compra
 from ..models.models import Cliente
 from ..schemas.compra import CompraIn, CompraOut, CompraPaginationOut
 from ..core.permissoes import requer_permissao
-from datetime import datetime
+from datetime import date, datetime
 
 compra_router = APIRouter(
     prefix="/compra",
@@ -36,8 +38,29 @@ def cadastra_compra(
         forma_pagamento=compra.forma_pagamento,
         preco_compra=compra.preco_compra,
     )
-    db.add(nova_compra)
-    db.flush()
+    try:
+        info_gerais = read_info(db)
+        hora_compra = compra.horario.time()
+        if not (
+            (info_gerais.inicio_almoco <= hora_compra <= info_gerais.fim_almoco)
+            ^ (info_gerais.inicio_jantar <= hora_compra <= info_gerais.fim_jantar)
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="Compra realizada fora dos horários de almoço e jantar",
+            )
+
+        db.add(nova_compra)
+        db.flush()
+
+    except IntegrityError as e:
+        db.rollback()
+        if "UNIQUE constraint failed: compra.usuario_id, compra.horario" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Já existe uma compra para este usuário na mesma data e horário",
+            )
+
     guarda_acao(
         db,
         AcoesEnum.CADASTRAR_COMPRA,
@@ -79,6 +102,7 @@ async def cadastra_compra_csv(
 
     inseridas = 0
     compras = []
+    info_gerais = read_info(db)
     for linha in tabela_csv.iter_rows(named=True):
         try:
             compra = Compra(
@@ -88,10 +112,29 @@ async def cadastra_compra_csv(
                 forma_pagamento=str(linha["forma_pagamento"]),
                 preco_compra=int(linha["preco_compra"]),
             )
+            hora_compra = compra.horario.time()
+            if not (
+                (info_gerais.inicio_almoco <= hora_compra <= info_gerais.fim_almoco)
+                ^ (info_gerais.inicio_jantar <= hora_compra <= info_gerais.fim_jantar)
+            ):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Compra realizada fora dos horários de almoço e jantar",
+                )
+
             db.add(compra)
             db.flush()
             compras.append(compra)
             inseridas += 1
+
+        except IntegrityError as e:
+            db.rollback()
+            if "UNIQUE constraint failed: compra.usuario_id, compra.horario" in str(e):
+                continue
+
+            else:
+                raise
+
         except Exception as e:
             raise HTTPException(
                 status_code=422, detail=f"Erro ao cadastrar {linha}: {e}"
@@ -134,6 +177,15 @@ def filtra_compra(
     preco_compra: int | None = Query(
         default=None, description="Filtra por preço da compra"
     ),
+    data_inicio: date | None = Query(
+        default=None, description="Filtrar compras a partir desta data"
+    ),
+    data_fim: date | None = Query(
+        default=None, description="Filtrar compras até esta data"
+    ),
+    refeicao: str | None = Query(
+        default=None, description="Incluir só **almoço** ou só **jantar**"
+    ),
     page: int = Query(1, ge=1, description="Número da página (padrão 1)"),
     page_size: int = Query(
         10, ge=1, le=100, description="Quantidade de compras por página (padrão 10)"
@@ -153,6 +205,27 @@ def filtra_compra(
         query = query.where(Cliente.nome.ilike(f"%{comprador}%"))
     if categoria_comprador is not None:
         query = query.where(Cliente.tipo.ilike(f"%{categoria_comprador}%"))
+
+    if data_inicio is not None:
+        query = query.where(Compra.horario >= data_inicio)
+    if data_fim is not None:
+        query = query.where(Compra.horario <= data_fim)
+
+    if refeicao is not None:
+        info_gerais = read_info(db)
+        match refeicao:
+            case "jantar":
+                ini = info_gerais.inicio_jantar
+                fim = info_gerais.fim_jantar
+            case "almoço":
+                ini = info_gerais.inicio_almoco
+                fim = info_gerais.fim_almoco
+            case _:
+                raise HTTPException(
+                    400,
+                    f"Refeicão {refeicao} não existe, seleciona 'jantar' ou 'almoço'",
+                )
+        query = query.where(func.time(Compra.horario).between(ini, fim))
 
     offset = (page - 1) * page_size
     total = db.scalar(select(func.count()).select_from(query.subquery()))
@@ -230,3 +303,29 @@ def listar_compras(
         "total_pages": ceil(total / page_size) if total else 0,
         "items": compras_out,
     }
+
+
+@router.get(
+    "/cliente/{cliente_id}/{year}/{month}",
+    summary="Retorna as compras de um cliente em um determinado mês e ano",
+    response_model=list[CompraOut],
+    dependencies=[Depends(requer_permissao("funcionario", "admin"))],
+)
+def get_compras_por_cliente_e_mes(
+    cliente_id: int,
+    year: int,
+    month: int,
+    db: conexao_bd,
+):
+    """
+    Retorna todas as compras de um cliente em um determinado mês e ano.
+    """
+    query = (
+        select(Compra)
+        .join(Cliente, Compra.usuario_id == Cliente.id)
+        .where(Cliente.id == cliente_id)
+        .where(func.extract("year", Compra.horario) == year)
+        .where(func.extract("month", Compra.horario) == month)
+    )
+    compras = db.scalars(query).all()
+    return compras
