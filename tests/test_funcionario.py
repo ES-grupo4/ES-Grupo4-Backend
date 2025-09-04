@@ -674,6 +674,51 @@ class FuncionarioTestCase(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 403)
+    
+    def test_atualiza_funcionario_com_sucesso_e_faz_login(self):
+        # Cria funcionário padrão
+        self.cria_funcionario()
+
+        # Busca o funcionário criado
+        funcionario = self.busca_funcionario_por_cpf("79920205451").json()["items"][0]
+
+        # Payload com dados de atualização
+        payload = {
+            "nome": "Fulaninho Games",
+            "senha": "Jorginho123",
+            "email": "novoemail@email.com",
+            "tipo": "funcionario",
+        }
+
+        # Atualiza o funcionário
+        response = client.put(
+            f"/funcionario/{funcionario['id']}/",
+            json=payload,
+            headers=self.auth_headers,
+        )
+
+        # Verifica se o status code é 200
+        self.assertEqual(response.status_code, 200)
+
+        # Verifica se os dados atualizados correspondem ao esperado
+        funcionario_atualizado = self.busca_funcionario_por_cpf("79920205451").json()[
+            "items"
+        ][0]
+        self.assertEqual(funcionario_atualizado, response.json())
+
+        # Cria payload de login com CPF e nova senha
+        payload_login = {
+            "cpf": "79920205451",
+            "senha": "Jorginho123"
+        }
+
+        response_login = client.post("/auth/login", json=payload_login)
+        
+        # Verfica se as novas credenciais funcionam no login do funcionário
+        self.assertEqual(response_login.status_code, 200)
+        data = response_login.json()
+        self.assertIn("token", data)
+        self.assertIsInstance(data["token"], str)
 
     def test_busca_funcionarios_sem_funcionarios(self):
         # Deixa a tabela de funcionarios vazia
