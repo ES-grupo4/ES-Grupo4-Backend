@@ -7,9 +7,9 @@ from app.core.seguranca import (
     gerar_hash,
     descriptografa_cpf,
 )
-from datetime import date
+from datetime import date, time
 from app.main import app
-from app.models.models import Compra, Funcionario, Cliente
+from app.models.models import Compra, Funcionario, Cliente, InformacoesGerais
 from app.models.db_setup import engine
 from sqlalchemy.orm import Session
 from datetime import datetime
@@ -96,6 +96,20 @@ class CompraTestCase(unittest.TestCase):
 
         self.auth_headers = {"Authorization": f"Bearer {token}"}
 
+        info = InformacoesGerais(
+            nome_empresa="Empresa",
+            preco_almoco=10,
+            preco_meia_almoco=5,
+            preco_jantar=14,
+            preco_meia_jantar=7,
+            inicio_almoco=time(10, 30),
+            fim_almoco=time(14, 0),
+            inicio_jantar=time(17, 30),
+            fim_jantar=time(21, 0),
+        )
+        self.db.add(info)
+        self.db.commit()
+
     def tearDown(self):
         self.db.query(Compra).delete()
         funcionario = (
@@ -106,6 +120,7 @@ class CompraTestCase(unittest.TestCase):
         if funcionario:
             self.db.delete(funcionario)
             self.db.commit()
+        self.db.query(InformacoesGerais).delete()
         self.db.close()
 
     def test_cadastra_sucesso(self):
