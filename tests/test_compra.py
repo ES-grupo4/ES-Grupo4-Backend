@@ -74,7 +74,6 @@ class CompraTestCase(unittest.TestCase):
             "tipo": "funcionario",
             "data_entrada": date(2025, 8, 4),
         }
-
         funcionario_existente = (
             self.db.query(Funcionario)
             .filter_by(cpf_hash=self.funcionario_data["cpf_hash"])
@@ -112,7 +111,7 @@ class CompraTestCase(unittest.TestCase):
     def test_cadastra_sucesso(self):
         payload = {
             "usuario_id": 1,
-            "horario": datetime(2025, 6, 20, 11, 20).isoformat(),
+            "horario": datetime(2025, 6, 20, 13, 20).isoformat(),
             "local": "ufcg",
             "forma_pagamento": "dinheiro",
             "preco_compra": 5,
@@ -134,7 +133,7 @@ class CompraTestCase(unittest.TestCase):
         rows = [
             {
                 "usuario_id": 5678,
-                "horario": "2025-04-12T10:50:00",
+                "horario": "2025-04-12T12:50:00",
                 "local": "ufcg",
                 "forma_pagamento": "dinheiro",
                 "preco_compra": 5,
@@ -169,7 +168,7 @@ class CompraTestCase(unittest.TestCase):
         rows = [
             {
                 "usuario_id": 5678,
-                "horario": "2025-04-12T10:50:00",
+                "horario": "2025-04-12T12:50:00",
                 "local": "ufcg",
                 "preco_compra": 5,
             }
@@ -189,7 +188,7 @@ class CompraTestCase(unittest.TestCase):
     def test_filtra_compras_sem_parametro(self):
         compra = Compra(
             usuario_id=self.cliente.usuario_id,
-            horario=datetime(2025, 4, 12, 10, 50),
+            horario=datetime(2025, 4, 13, 10, 50),
             local="ufcg",
             forma_pagamento="pix",
             preco_compra=5,
@@ -222,21 +221,21 @@ class CompraTestCase(unittest.TestCase):
         compras = [
             {
                 "usuario_id": self.cliente.usuario_id,
-                "horario": datetime(2025, 4, 12, 10, 50).isoformat(),
+                "horario": datetime(2025, 4, 12, 12, 50).isoformat(),
                 "local": "ufcg",
                 "forma_pagamento": "pix",
                 "preco_compra": 10,
             },
             {
                 "usuario_id": self.cliente.usuario_id,
-                "horario": datetime(2025, 6, 20, 11, 20).isoformat(),
+                "horario": datetime(2025, 6, 20, 13, 20).isoformat(),
                 "local": "ufcg",
                 "forma_pagamento": "dinheiro",
                 "preco_compra": 5,
             },
             {
                 "usuario_id": self.cliente.usuario_id,
-                "horario": datetime(2023, 4, 13, 12, 00, 0).isoformat(),
+                "horario": datetime(2023, 4, 13, 14, 00, 0).isoformat(),
                 "local": "ufcg",
                 "forma_pagamento": "pix",
                 "preco_compra": 10,
@@ -261,21 +260,21 @@ class CompraTestCase(unittest.TestCase):
         compras = [
             {
                 "usuario_id": self.cliente.usuario_id,
-                "horario": datetime(2025, 4, 12, 10, 50).isoformat(),
+                "horario": datetime(2025, 4, 12, 12, 50).isoformat(),
                 "local": "ufcg",
                 "forma_pagamento": "pix",
                 "preco_compra": 10,
             },
             {
                 "usuario_id": self.cliente.usuario_id,
-                "horario": datetime(2025, 6, 20, 11, 20).isoformat(),
+                "horario": datetime(2025, 6, 20, 13, 20).isoformat(),
                 "local": "ufcg",
                 "forma_pagamento": "dinheiro",
                 "preco_compra": 5,
             },
             {
                 "usuario_id": self.cliente.usuario_id,
-                "horario": datetime(2023, 4, 13, 12, 00, 0).isoformat(),
+                "horario": datetime(2023, 4, 13, 14, 00, 0).isoformat(),
                 "local": "ufcg",
                 "forma_pagamento": "pix",
                 "preco_compra": 10,
@@ -297,21 +296,21 @@ class CompraTestCase(unittest.TestCase):
         compras = [
             {
                 "usuario_id": self.cliente.usuario_id,
-                "horario": datetime(2025, 4, 12, 10, 50).isoformat(),
+                "horario": datetime(2025, 4, 12, 12, 50).isoformat(),
                 "local": "ufcg",
                 "forma_pagamento": "pix",
                 "preco_compra": 10,
             },
             {
                 "usuario_id": self.cliente.usuario_id,
-                "horario": datetime(2025, 6, 20, 11, 20).isoformat(),
+                "horario": datetime(2025, 6, 20, 13, 20).isoformat(),
                 "local": "ufcg",
                 "forma_pagamento": "dinheiro",
                 "preco_compra": 5,
             },
             {
                 "usuario_id": self.cliente.usuario_id,
-                "horario": datetime(2023, 4, 13, 12, 00, 0).isoformat(),
+                "horario": datetime(2023, 4, 13, 14, 00, 0).isoformat(),
                 "local": "ufcg",
                 "forma_pagamento": "pix",
                 "preco_compra": 10,
@@ -356,7 +355,7 @@ class CompraTestCase(unittest.TestCase):
     def test_lista_compras_sem_parametros(self):
         compra = Compra(
             usuario_id=self.cliente.usuario_id,
-            horario=datetime(2025, 4, 12, 10, 50),
+            horario=datetime(2025, 4, 12, 12, 50),
             local="ufcg",
             forma_pagamento="pix",
             preco_compra=5,
@@ -393,21 +392,21 @@ class CompraTestCase(unittest.TestCase):
         compras = [
             {
                 "usuario_id": self.cliente.usuario_id,
-                "horario": datetime(2025, 4, 12, 10, 50).isoformat(),
+                "horario": datetime(2025, 4, 12, 12, 50).isoformat(),
                 "local": "ufcg",
                 "forma_pagamento": "pix",
                 "preco_compra": 10,
             },
             {
                 "usuario_id": self.cliente.usuario_id,
-                "horario": datetime(2025, 6, 20, 11, 20).isoformat(),
+                "horario": datetime(2025, 6, 20, 13, 20).isoformat(),
                 "local": "ufcg",
                 "forma_pagamento": "dinheiro",
                 "preco_compra": 5,
             },
             {
                 "usuario_id": self.cliente.usuario_id,
-                "horario": datetime(2023, 4, 13, 12, 00, 0).isoformat(),
+                "horario": datetime(2023, 4, 13, 14, 00, 0).isoformat(),
                 "local": "ufcg",
                 "forma_pagamento": "pix",
                 "preco_compra": 10,
@@ -432,21 +431,21 @@ class CompraTestCase(unittest.TestCase):
         compras = [
             {
                 "usuario_id": self.cliente.usuario_id,
-                "horario": datetime(2025, 4, 12, 10, 50).isoformat(),
+                "horario": datetime(2025, 4, 12, 12, 50).isoformat(),
                 "local": "ufcg",
                 "forma_pagamento": "pix",
                 "preco_compra": 10,
             },
             {
                 "usuario_id": self.cliente.usuario_id,
-                "horario": datetime(2025, 6, 20, 11, 20).isoformat(),
+                "horario": datetime(2025, 6, 20, 13, 20).isoformat(),
                 "local": "ufcg",
                 "forma_pagamento": "dinheiro",
                 "preco_compra": 5,
             },
             {
                 "usuario_id": self.cliente.usuario_id,
-                "horario": datetime(2023, 4, 13, 12, 00, 0).isoformat(),
+                "horario": datetime(2023, 4, 13, 14, 00, 0).isoformat(),
                 "local": "ufcg",
                 "forma_pagamento": "pix",
                 "preco_compra": 10,
@@ -468,21 +467,21 @@ class CompraTestCase(unittest.TestCase):
         compras = [
             {
                 "usuario_id": self.cliente.usuario_id,
-                "horario": datetime(2025, 4, 12, 10, 50).isoformat(),
+                "horario": datetime(2025, 4, 12, 12, 50).isoformat(),
                 "local": "ufcg",
                 "forma_pagamento": "pix",
                 "preco_compra": 10,
             },
             {
                 "usuario_id": self.cliente.usuario_id,
-                "horario": datetime(2025, 6, 20, 11, 20).isoformat(),
+                "horario": datetime(2025, 6, 20, 13, 20).isoformat(),
                 "local": "ufcg",
                 "forma_pagamento": "dinheiro",
                 "preco_compra": 5,
             },
             {
                 "usuario_id": self.cliente.usuario_id,
-                "horario": datetime(2023, 4, 13, 12, 00, 0).isoformat(),
+                "horario": datetime(2023, 4, 13, 14, 00, 0).isoformat(),
                 "local": "ufcg",
                 "forma_pagamento": "pix",
                 "preco_compra": 10,
@@ -494,7 +493,7 @@ class CompraTestCase(unittest.TestCase):
 
         response = self.client.get(
             "/compra/lista",
-            params={"busca": "2025-04-12T10:50:00", "page": 1, "page_size": 10},
+            params={"busca": "2025-04-12T12:50:00", "page": 1, "page_size": 10},
             headers=self.auth_headers,
         )
         self.assertEqual(response.status_code, 200)
@@ -505,21 +504,21 @@ class CompraTestCase(unittest.TestCase):
         compras = [
             {
                 "usuario_id": self.cliente.usuario_id,
-                "horario": datetime(2025, 4, 12, 10, 50).isoformat(),
+                "horario": datetime(2025, 4, 12, 12, 50).isoformat(),
                 "local": "ufcg",
                 "forma_pagamento": "pix",
                 "preco_compra": 10,
             },
             {
                 "usuario_id": self.cliente.usuario_id,
-                "horario": datetime(2025, 6, 20, 11, 20).isoformat(),
+                "horario": datetime(2025, 6, 20, 13, 20).isoformat(),
                 "local": "ufcg",
                 "forma_pagamento": "dinheiro",
                 "preco_compra": 5,
             },
             {
                 "usuario_id": self.cliente.usuario_id,
-                "horario": datetime(2023, 4, 13, 12, 00, 0).isoformat(),
+                "horario": datetime(2023, 4, 13, 14, 00, 0).isoformat(),
                 "local": "ufcg",
                 "forma_pagamento": "pix",
                 "preco_compra": 10,
