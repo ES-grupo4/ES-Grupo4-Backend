@@ -83,7 +83,9 @@ def retorna_clientes_registrados(bd: Session, query_alunos_totais: Subquery):
 
 
 def retorna_compras_por_tipo(
-    bd: Session, query_compras_mes: Subquery, query_alunos_totais: Subquery
+    bd: Session,
+    query_compras_mes: Subquery,
+    query_alunos_totais: Subquery,
 ):
     clientes_totais = select(Cliente.id)
     compras_totais = bd.scalar(
@@ -187,6 +189,104 @@ def retorna_compras_por_tipo(
     )
 
 
+def retorna_faturamento_por_tipo(
+    bd: Session,
+    query_compras_mes: Subquery,
+    query_alunos_totais: Subquery,
+    faturamento_total: int,
+):
+    clientes_totais = select(Cliente.id)
+    clientes_externos = clientes_totais.where(Cliente.tipo == "externo")
+    clientes_professores = clientes_totais.where(Cliente.tipo == "professor")
+    clientes_tecnicos = clientes_totais.where(Cliente.tipo == "tecnico")
+
+    faturamento_externos = bd.scalar(
+        select(func.sum(query_compras_mes.columns.preco_compra))
+        .select_from(query_compras_mes)
+        .where(query_compras_mes.columns.usuario_id.in_(clientes_externos))
+    )
+    faturamento_professores = bd.scalar(
+        select(func.sum(query_compras_mes.columns.preco_compra))
+        .select_from(query_compras_mes)
+        .where(query_compras_mes.columns.usuario_id.in_(clientes_professores))
+    )
+    faturamento_tecnicos = bd.scalar(
+        select(func.sum(query_compras_mes.columns.preco_compra))
+        .select_from(query_compras_mes)
+        .where(
+            query_compras_mes.columns.usuario_id.in_(clientes_tecnicos),
+        )
+    )
+
+    alunos_total = clientes_totais.where(Cliente.tipo == "aluno")
+    faturamento_total_alunos = bd.scalar(
+        select(func.sum(query_compras_mes.columns.preco_compra))
+        .select_from(query_compras_mes)
+        .where(query_compras_mes.columns.usuario_id.in_(alunos_total))
+    )
+    faturamento_pos_graduacao = bd.scalar(
+        select(func.sum(query_compras_mes.columns.preco_compra))
+        .select_from(query_compras_mes)
+        .where(
+            query_compras_mes.columns.usuario_id.in_(
+                select(query_alunos_totais.columns.id).where(
+                    query_alunos_totais.columns.graduando.is_(False),
+                    query_alunos_totais.columns.pos_graduando.is_(True),
+                )
+            )
+        )
+    )
+    faturamento_graduacao = bd.scalar(
+        select(func.sum(query_compras_mes.columns.preco_compra))
+        .select_from(query_compras_mes)
+        .where(
+            query_compras_mes.columns.usuario_id.in_(
+                select(query_alunos_totais.columns.id).where(
+                    query_alunos_totais.columns.graduando.is_(True),
+                    query_alunos_totais.columns.pos_graduando.is_(False),
+                )
+            )
+        )
+    )
+    faturamento_graduacao_e_pos_graduacao = bd.scalar(
+        select(func.sum(query_compras_mes.columns.preco_compra))
+        .select_from(query_compras_mes)
+        .where(
+            query_compras_mes.columns.usuario_id.in_(
+                select(query_alunos_totais.columns.id).where(
+                    query_alunos_totais.columns.graduando.is_(True),
+                    query_alunos_totais.columns.pos_graduando.is_(True),
+                )
+            )
+        )
+    )
+    faturamento_bolsistas = bd.scalar(
+        select(func.sum(query_compras_mes.columns.preco_compra))
+        .select_from(query_compras_mes)
+        .where(
+            query_compras_mes.columns.usuario_id.in_(
+                select(query_alunos_totais.columns.id).where(
+                    query_alunos_totais.columns.bolsista.is_(True),
+                )
+            )
+        )
+    )
+
+    return PorTipoCliente(
+        total=faturamento_total or 0,
+        externos=faturamento_externos or 0,
+        professores=faturamento_professores or 0,
+        tecnicos=faturamento_tecnicos or 0,
+        alunos=AlunosRegistrados(
+            total=faturamento_total_alunos or 0,
+            pos_graduacao=faturamento_pos_graduacao or 0,
+            em_graduacao=faturamento_graduacao or 0,
+            ambos=faturamento_graduacao_e_pos_graduacao or 0,
+            bolsistas=faturamento_bolsistas or 0,
+        ),
+    )
+
+
 @router.get(
     "/{ano}/{mes}",
     summary="Pega as informações necessárias para gerar um relatório mensal",
@@ -249,6 +349,15 @@ def relatorio_get(
         query_alunos_totais=query_alunos_totais,
     )
 
+    faturamento_por_tipo = retorna_faturamento_por_tipo(
+        bd=bd,
+        query_compras_mes=query_compras_mes.subquery(),
+        query_alunos_totais=query_alunos_totais,
+        faturamento_total=faturamento_mensal or 0,
+    )
+
+    # faturamento_por_tipo = retorna_faturamento_por_tipo(bd=bd)
+
     return RelatorioOut(
         nome_empresa=nome_empresa,
         faturamento_bruto_mensal=faturamento_mensal or 0,
@@ -258,4 +367,5 @@ def relatorio_get(
         desativados=num_desativados or 0,
         funcionarios_adicionados_mes=num_adicionados or 0,
         compras_por_tipo=compras_por_tipo,
+        faturamento_por_tipo=faturamento_por_tipo,
     )

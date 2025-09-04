@@ -92,10 +92,9 @@ def atualiza_funcionario(
         )
 
     for campo, valor in funcionario.model_dump(exclude_unset=True).items():
-        if campo == "cpf":
-            valor = valida_e_retorna_cpf(valor)
-            funcionario_existente.cpf_cript = criptografa_cpf(valor)
-            funcionario_existente.cpf_hash = gerar_hash(valor)
+        if campo == "senha":
+            valor = gerar_hash(valor)
+            funcionario_existente.senha = valor
         setattr(funcionario_existente, campo, valor)
 
     guarda_acao(
