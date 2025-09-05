@@ -11,7 +11,6 @@ from .routers.informacoes_gerais import informacoes_gerais_router
 
 from .routers.cliente import cliente_router
 from .routers.historico_acoes import acoes_router
-from .routers.relatorio import relatorio_router
 from .models.db_setup import engine
 from .models.models import Funcionario, InformacoesGerais
 
@@ -49,7 +48,7 @@ async def setUp(app: FastAPI):
             "preco_meia_almoco": 600,
             "preco_jantar": 1000,
             "preco_meia_jantar": 500,
-            "inicio_almoco": time(12, 30, 00),
+            "inicio_almoco": time(10, 30, 00),
             "fim_almoco": time(14, 00, 00),
             "inicio_jantar": time(17, 00, 00),
             "fim_jantar": time(20, 00, 00),
