@@ -136,6 +136,21 @@ class CompraTestCase(unittest.TestCase):
         info = response.json()
         self.assertEqual(info, {"message": "Compra cadastrada com sucesso"})
 
+    def test_cadastra_fora_do_horario(self):
+        payload = {
+            "usuario_id": 2,
+            "horario": datetime(2025, 6, 20, 9, 20).isoformat(),
+            "local": "ufcg",
+            "forma_pagamento": "dinheiro",
+            "preco_compra": 5,
+        }
+        response = self.client.post("/compra/", json=payload, headers=self.auth_headers)
+        self.assertEqual(response.status_code, 400)
+        info = response.json()
+        self.assertEqual(
+            info, {"detail": "Compra realizada fora dos horários de almoço e jantar"}
+        )
+
     def test_cadastra_compra_usuario_inexistente(self):
         payload = {
             "usuario_id": 5580,
@@ -184,6 +199,31 @@ class CompraTestCase(unittest.TestCase):
 
         compra = self.db.query(Compra).filter_by(forma_pagamento="dinheiro").first()
         self.assertIsNotNone(compra)
+
+    def test_cadastra_csv_fora_do_horario(self):
+        headers = ["usuario_id", "horario", "local", "forma_pagamento", "preco_compra"]
+        rows = [
+            {
+                "usuario_id": 2,
+                "horario": "2025-04-12T16:00:00",
+                "local": "ufcg",
+                "forma_pagamento": "dinheiro",
+                "preco_compra": 5,
+            },
+        ]
+        csv_bytes = self.generate_csv_bytes(headers, rows)
+
+        response = self.client.post(
+            "/compra/csv",
+            files={"arquivo": ("compras.csv", csv_bytes, "text/csv")},
+            headers=self.auth_headers,
+        )
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertEqual(
+            data["detail"],
+            "Compra realizada fora dos horários de almoço e jantar",
+        )
 
     def test_cadastra_csv_usuario_inexistente(self):
         headers = ["usuario_id", "horario", "local", "forma_pagamento", "preco_compra"]
@@ -274,7 +314,7 @@ class CompraTestCase(unittest.TestCase):
         info = response.json()
         self.assertEqual(info["items"], [])
 
-    def test_filtra_compras_com_parametro(self):
+    def test_filtra_compras_com_parametro_forma_pagamento(self):
         compras = [
             {
                 "usuario_id": self.cliente.usuario_id,
@@ -313,7 +353,90 @@ class CompraTestCase(unittest.TestCase):
         for c in info:
             self.assertEqual(info["items"][0]["forma_pagamento"], "pix")
 
-    def test_filtra_compras_com_parametro_de_cliente(self):
+    def test_filtra_compras_com_parametro_horario(self):
+        compras = [
+            {
+                "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2025, 4, 12, 12, 50).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "pix",
+                "preco_compra": 10,
+            },
+            {
+                "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2025, 6, 20, 13, 20).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "dinheiro",
+                "preco_compra": 5,
+            },
+            {
+                "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2023, 4, 13, 14, 00, 0).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "pix",
+                "preco_compra": 10,
+            },
+        ]
+
+        for i in compras:
+            self.client.post("/compra/", json=i, headers=self.auth_headers)
+
+        response = self.client.get(
+            "/compra/",
+            params={
+                "horario": datetime(2025, 4, 12, 12, 50).isoformat(),
+                "page": 1,
+                "page_size": 10,
+            },
+            headers=self.auth_headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        info = response.json()
+        self.assertEqual(len(info["items"]), 1)
+        self.assertEqual(
+            info["items"][0]["horario"], datetime(2025, 4, 12, 12, 50).isoformat()
+        )
+
+    def test_filtra_compras_com_parametro_local(self):
+        compras = [
+            {
+                "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2025, 4, 12, 12, 50).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "pix",
+                "preco_compra": 10,
+            },
+            {
+                "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2025, 6, 20, 13, 20).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "dinheiro",
+                "preco_compra": 5,
+            },
+            {
+                "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2023, 4, 13, 14, 00, 0).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "pix",
+                "preco_compra": 10,
+            },
+        ]
+
+        for i in compras:
+            self.client.post("/compra/", json=i, headers=self.auth_headers)
+
+        response = self.client.get(
+            "/compra/",
+            params={"local": "ufcg", "page": 1, "page_size": 10},
+            headers=self.auth_headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        info = response.json()
+        self.assertEqual(len(info["items"]), 3)
+        for c in info:
+            self.assertEqual(info["items"][0]["local"], "ufcg")
+
+    def test_filtra_compras_com_parametro_nome_do_cliente(self):
         compras = [
             {
                 "usuario_id": self.cliente.usuario_id,
@@ -348,6 +471,80 @@ class CompraTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json()["items"]), 3)
+
+    def test_filtra_compras_com_parametro_tipo_cliente(self):
+        compras = [
+            {
+                "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2025, 4, 12, 12, 50).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "pix",
+                "preco_compra": 10,
+            },
+            {
+                "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2025, 6, 20, 13, 20).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "dinheiro",
+                "preco_compra": 5,
+            },
+            {
+                "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2023, 4, 13, 14, 00, 0).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "pix",
+                "preco_compra": 10,
+            },
+        ]
+
+        for i in compras:
+            self.client.post("/compra/", json=i, headers=self.auth_headers)
+
+        response = self.client.get(
+            "/compra/",
+            params={"categoria_comprador": "aluno", "page": 1, "page_size": 10},
+            headers=self.auth_headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        info = response.json()
+        self.assertEqual(len(info["items"]), 3)
+
+    def test_filtra_compras_com_parametro_refeicao(self):
+        compras = [
+            {
+                "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2025, 4, 12, 12, 50).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "pix",
+                "preco_compra": 10,
+            },
+            {
+                "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2025, 6, 20, 13, 20).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "dinheiro",
+                "preco_compra": 5,
+            },
+            {
+                "usuario_id": self.cliente.usuario_id,
+                "horario": datetime(2023, 4, 13, 18, 00, 0).isoformat(),
+                "local": "ufcg",
+                "forma_pagamento": "pix",
+                "preco_compra": 10,
+            },
+        ]
+
+        for i in compras:
+            self.client.post("/compra/", json=i, headers=self.auth_headers)
+
+        response = self.client.get(
+            "/compra/",
+            params={"refeicao": "jantar", "page": 1, "page_size": 10},
+            headers=self.auth_headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        info = response.json()
+        self.assertEqual(len(info["items"]), 1)
 
     def test_filtra_compras_com_parametro_preço(self):
         compras = [
@@ -484,7 +681,7 @@ class CompraTestCase(unittest.TestCase):
         for c in info:
             self.assertEqual(info["items"][0]["forma_pagamento"], "pix")
 
-    def test_lista_compras_com_parametro_de_cliente(self):
+    def test_lista_compras_com_parametro_cliente(self):
         compras = [
             {
                 "usuario_id": self.cliente.usuario_id,
