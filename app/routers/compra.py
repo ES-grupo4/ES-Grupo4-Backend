@@ -50,6 +50,13 @@ def cadastra_compra(
                 detail="Compra realizada fora dos horários de almoço e jantar",
             )
 
+        cliente_com_usuario_id = db.get(Cliente, compra.usuario_id)
+        if not (cliente_com_usuario_id):
+            raise HTTPException(
+                status_code=400,
+                detail="O cliente solicitante da compra não está cadastrado no sistema",
+            )
+
         db.add(nova_compra)
         db.flush()
 
@@ -122,10 +129,20 @@ async def cadastra_compra_csv(
                     detail="Compra realizada fora dos horários de almoço e jantar",
                 )
 
+            cliente_com_usuario_id = db.get(Cliente, compra.usuario_id)
+            if not (cliente_com_usuario_id):
+                raise HTTPException(
+                    status_code=400,
+                    detail="O cliente solicitante da compra não está cadastrado no sistema",
+                )
+
             db.add(compra)
             db.flush()
             compras.append(compra)
             inseridas += 1
+
+        except HTTPException as e:
+            raise e
 
         except IntegrityError as e:
             db.rollback()

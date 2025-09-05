@@ -125,7 +125,7 @@ class CompraTestCase(unittest.TestCase):
 
     def test_cadastra_sucesso(self):
         payload = {
-            "usuario_id": 1,
+            "usuario_id": 2,
             "horario": datetime(2025, 6, 20, 13, 20).isoformat(),
             "local": "ufcg",
             "forma_pagamento": "dinheiro",
@@ -133,9 +133,26 @@ class CompraTestCase(unittest.TestCase):
         }
         response = self.client.post("/compra/", json=payload, headers=self.auth_headers)
         self.assertEqual(response.status_code, 201)
-
         info = response.json()
         self.assertEqual(info, {"message": "Compra cadastrada com sucesso"})
+
+    def test_cadastra_compra_usuario_inexistente(self):
+        payload = {
+            "usuario_id": 5580,
+            "horario": datetime(2025, 6, 20, 13, 20).isoformat(),
+            "local": "ufcg",
+            "forma_pagamento": "dinheiro",
+            "preco_compra": 5,
+        }
+        response = self.client.post("/compra/", json=payload, headers=self.auth_headers)
+        self.assertEqual(response.status_code, 400)
+        info = response.json()
+        self.assertEqual(
+            info,
+            {
+                "detail": "O cliente solicitante da compra não está cadastrado no sistema"
+            },
+        )
 
     def generate_csv_bytes(self, headers: list[str], rows: list[dict]) -> bytes:
         tabela = pl.DataFrame(rows)[headers]
@@ -147,7 +164,7 @@ class CompraTestCase(unittest.TestCase):
         headers = ["usuario_id", "horario", "local", "forma_pagamento", "preco_compra"]
         rows = [
             {
-                "usuario_id": 5678,
+                "usuario_id": 2,
                 "horario": "2025-04-12T12:50:00",
                 "local": "ufcg",
                 "forma_pagamento": "dinheiro",
@@ -167,6 +184,31 @@ class CompraTestCase(unittest.TestCase):
 
         compra = self.db.query(Compra).filter_by(forma_pagamento="dinheiro").first()
         self.assertIsNotNone(compra)
+
+    def test_cadastra_csv_usuario_inexistente(self):
+        headers = ["usuario_id", "horario", "local", "forma_pagamento", "preco_compra"]
+        rows = [
+            {
+                "usuario_id": 5580,
+                "horario": "2025-04-12T12:50:00",
+                "local": "ufcg",
+                "forma_pagamento": "dinheiro",
+                "preco_compra": 5,
+            },
+        ]
+        csv_bytes = self.generate_csv_bytes(headers, rows)
+
+        response = self.client.post(
+            "/compra/csv",
+            files={"arquivo": ("compras.csv", csv_bytes, "text/csv")},
+            headers=self.auth_headers,
+        )
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertEqual(
+            data["detail"],
+            "O cliente solicitante da compra não está cadastrado no sistema",
+        )
 
     def test_cadastra_csv_extensao_invalida(self):
         csv_bytes = b"qualquer,conteudo\n"
