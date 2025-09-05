@@ -29,8 +29,8 @@ ALGORITMO = "HS256"
 TOKEN_EXPIRA_EM_MINUTOS = 30
 
 
-def cria_token_de_acesso(funcionarioData: dict):
-    to_encode = funcionarioData.copy()
+def cria_token_de_acesso(funcionario_data: dict):
+    to_encode = funcionario_data.copy()
     expira_em = datetime.now(timezone.utc) + timedelta(minutes=TOKEN_EXPIRA_EM_MINUTOS)
 
     to_encode.update({"exp": expira_em})
@@ -44,7 +44,7 @@ def verifica_token_de_acesso(token: str):
     return carga.get("sub")
 
 
-async def get_usuario_atual(
+def get_usuario_atual(
     credenciais: HTTPAuthorizationCredentials = Depends(security),
 ):
     credenciais_exception = HTTPException(
