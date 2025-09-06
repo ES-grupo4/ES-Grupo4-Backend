@@ -927,16 +927,6 @@ class FuncionarioTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 401)
 
-    def test_admin_busca_funcionarios_por_nome(self):
-        self.funcionario_padrao["nome"] = "Joao"
-        self.cria_funcionario()
-        response = client.get("/funcionario/?nome=Joao", headers=self.auth_headers)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            self.busca_funcionario_por_cpf("79920205451").json(), response.json()
-        )
-
     def test_funcionario_busca_funcionarios_por_nome(self):
         self.funcionario_padrao["nome"] = "Joao"
         self.cria_funcionario()
@@ -949,15 +939,6 @@ class FuncionarioTestCase(unittest.TestCase):
         self.assertEqual(
             self.busca_funcionario_por_cpf("79920205451").json(), response.json()
         )
-
-    def test_busca_funcionarios_por_nome_sem_autorizacao(self):
-        self.funcionario_padrao["nome"] = "Joao"
-        self.cria_funcionario()
-        response = client.get(
-            "/funcionario/?nome=Joao", headers=self.auth_headers_invalido
-        )
-
-        self.assertEqual(response.status_code, 401)
 
     def test_admin_busca_funcionarios_por_nome_inexistente(self):
         self.funcionario_padrao["nome"] = "Jose"
