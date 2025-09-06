@@ -94,9 +94,6 @@ def update_info(
             AcoesEnum.ATUALIZAR_INFOS_GERAIS,
             ator["cpf"],
             1,
-            # info_adicional=InformacoesGeraisDTO.model_validate(
-            #     record, from_attributes=True
-            # ).model_dump_json(),
         )
         return record
     except Exception as e:
