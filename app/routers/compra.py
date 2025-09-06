@@ -15,7 +15,7 @@ from ..core.permissoes import requer_permissao
 from datetime import date, datetime
 
 compra_router = APIRouter(
-    prefix="/compra",
+    prefix="/app/compra",
     tags=["Compra"],
 )
 router = compra_router

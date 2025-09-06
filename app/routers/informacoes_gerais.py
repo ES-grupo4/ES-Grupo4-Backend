@@ -10,7 +10,7 @@ from ..models.db_setup import get_bd
 from ..schemas.informacoes_gerais import InformacoesGeraisDTO
 
 informacoes_gerais_router = APIRouter(
-    prefix="/informacoes-gerais",
+    prefix="/app/informacoes-gerais",
     tags=["Informações Gerais"],
 )
 

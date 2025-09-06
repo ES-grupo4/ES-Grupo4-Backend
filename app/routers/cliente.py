@@ -22,7 +22,7 @@ from ..schemas.cliente import (
 from ..utils.validacao import valida_e_retorna_cpf
 
 cliente_router = APIRouter(
-    prefix="/cliente",
+    prefix="/app/cliente",
     tags=["Cliente"],
 )
 

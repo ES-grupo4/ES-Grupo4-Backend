@@ -15,7 +15,7 @@ from ..models.db_setup import conexao_bd
 from ..models.models import HistoricoAcoes, Usuario
 
 acoes_router = APIRouter(
-    prefix="/historico_acoes",
+    prefix="/app/historico_acoes",
     tags=["Histórico de Ações"],
     # dependencies=[Depends(requer_permissao("admin"))],
 )
@@ -28,7 +28,6 @@ router = acoes_router
     summary="Lista ações realizadas por funcionários",
     response_model=AcaoPaginationOut,
     dependencies=[Depends(requer_permissao("admin"))],
-
 )
 def pega_acoes(
     db: conexao_bd,

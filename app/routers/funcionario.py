@@ -23,7 +23,7 @@ from validate_docbr import CPF  # type: ignore
 
 cpf = CPF()
 
-funcionarios_router = APIRouter(prefix="/funcionario", tags=["Funcionário"])
+funcionarios_router = APIRouter(prefix="/app/funcionario", tags=["Funcionário"])
 router = funcionarios_router
 
 

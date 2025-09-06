@@ -11,7 +11,7 @@ from ..models.db_setup import get_bd
 
 from ..schemas.relatorio import AlunosRegistrados, PorTipoCliente, RelatorioOut
 
-relatorio_router = APIRouter(prefix="/relatorio", tags=["Relatório"])
+relatorio_router = APIRouter(prefix="/app/relatorio", tags=["Relatório"])
 router = relatorio_router
 
 

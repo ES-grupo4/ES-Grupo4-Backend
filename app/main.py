@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+import uvicorn
+from uvicorn.config import LOGGING_CONFIG
 
 from app.core.seguranca import criptografa_cpf, gerar_hash
 from .routers.funcionario import funcionarios_router
@@ -60,19 +62,23 @@ async def setUp(app: FastAPI):
 
 
 # Só por enquanto
-app = FastAPI(lifespan=setUp)
+app = FastAPI(
+    lifespan=setUp,
+    docs_url="/app/docs",
+    openapi_url="/app/openapi.json",
+)
 
 # =====================================
 # Liberando acesso da api
-origins = ["*"]
+# origins = ["*"]
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=origins,
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
 # =====================================
 
 app.include_router(auth_router)
@@ -82,3 +88,13 @@ app.include_router(compra_router)
 app.include_router(funcionarios_router)
 app.include_router(informacoes_gerais_router)
 app.include_router(relatorio_router)
+
+
+if __name__ == "__main__":
+    LOGGING_CONFIG["formatters"]["default"]["fmt"] = (
+        "%(asctime)s [%(name)s] %(levelprefix)s %(message)s"
+    )
+    LOGGING_CONFIG["formatters"]["access"]["fmt"] = (
+        '%(asctime)s [%(name)s] %(levelprefix)s %(client_addr)s - "%(request_line)s" %(status_code)s'
+    )
+    uvicorn.run(app, port=8000)

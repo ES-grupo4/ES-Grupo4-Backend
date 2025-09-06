@@ -7,7 +7,7 @@ from ..core.seguranca import gerar_hash, verificar_hash, cria_token_de_acesso
 from ..utils.validacao import valida_e_retorna_cpf
 
 auth_router = APIRouter(
-    prefix="/auth",
+    prefix="/app/auth",
     tags=["Autenticação"],
 )
 router = auth_router
