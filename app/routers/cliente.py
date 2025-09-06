@@ -9,7 +9,7 @@ import polars as pl
 
 from app.core.historico_acoes import AcoesEnum, guarda_acao
 from ..models.db_setup import conexao_bd
-from ..models.models import Cliente, ClienteTipo, Usuario
+from ..models.models import Cliente, ClienteTipo
 from ..core.seguranca import gerar_hash, criptografa_cpf
 from ..core.permissoes import requer_permissao
 from ..schemas.cliente import (
@@ -20,6 +20,9 @@ from ..schemas.cliente import (
     ClientePaginationOut,
 )
 from ..utils.validacao import valida_e_retorna_cpf
+
+CLIENTE_NAO_ENCONTRADO_MENSAGEM = "Cliente não encontrado"
+
 
 cliente_router = APIRouter(
     prefix="/app/cliente",
@@ -157,7 +160,7 @@ def remover_cliente_id(
     if not cliente:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cliente não encontrado",
+            detail=CLIENTE_NAO_ENCONTRADO_MENSAGEM,
         )
     db.delete(cliente)
     db.flush()
@@ -183,7 +186,7 @@ def editar_cliente(
     if not cliente:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cliente não encontrado",
+            detail=CLIENTE_NAO_ENCONTRADO_MENSAGEM,
         )
     for campo, valor in dados.model_dump(exclude_unset=True).items():
         setattr(cliente, campo, valor)
@@ -211,7 +214,7 @@ def editar_cliente_id(
     if not cliente:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cliente não encontrado",
+            detail=CLIENTE_NAO_ENCONTRADO_MENSAGEM,
         )
     for campo, valor in dados.model_dump(exclude_unset=True).items():
         setattr(cliente, campo, valor)
@@ -235,7 +238,7 @@ def buscar_cliente(cpf: str, db: conexao_bd):
     if not cliente:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cliente não encontrado",
+            detail=CLIENTE_NAO_ENCONTRADO_MENSAGEM,
         )
     return ClienteOut.from_orm(cliente)
 
@@ -253,7 +256,7 @@ def buscar_cliente_id(id: int, db: conexao_bd):
     if not cliente:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cliente não encontrado",
+            detail=CLIENTE_NAO_ENCONTRADO_MENSAGEM,
         )
     return ClienteOut.from_orm(cliente)
 
@@ -265,7 +268,8 @@ def anonimiza_funcionario(
     cliente = db.scalar(select(Cliente).where(Cliente.id == id))
     if not cliente:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Cliente não encontrado"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=CLIENTE_NAO_ENCONTRADO_MENSAGEM,
         )
 
     if cliente.cpf_hash is None:

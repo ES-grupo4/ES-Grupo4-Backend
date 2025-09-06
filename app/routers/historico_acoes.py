@@ -17,7 +17,6 @@ from ..models.models import HistoricoAcoes, Usuario
 acoes_router = APIRouter(
     prefix="/app/historico_acoes",
     tags=["Histórico de Ações"],
-    # dependencies=[Depends(requer_permissao("admin"))],
 )
 
 router = acoes_router

@@ -26,6 +26,9 @@ cpf = CPF()
 funcionarios_router = APIRouter(prefix="/app/funcionario", tags=["Funcionário"])
 router = funcionarios_router
 
+FUNCIONARIO_NAO_ENCONTRADO_MSG = "Funcionário não encontrado"
+NUMERO_PAGINA_PADRAO_MSG = "Número da página (padrão 1)"
+
 
 def valida_funcionario(
     funcionario: FuncionarioIn,
@@ -88,7 +91,7 @@ def atualiza_funcionario(
 
     if not funcionario_existente:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Funcionário não encontrado"
+            status_code=status.HTTP_404_NOT_FOUND, detail=FUNCIONARIO_NAO_ENCONTRADO_MSG
         )
 
     for campo, valor in funcionario.model_dump(exclude_unset=True).items():
@@ -123,7 +126,7 @@ def busca_funcionarios(
     data_saida: date | None = Query(
         None, description="Filtra pela data de saída do funcionário"
     ),
-    page: int = Query(1, ge=1, description="Número da página (padrão 1)"),
+    page: int = Query(1, ge=1, description=NUMERO_PAGINA_PADRAO_MSG),
     page_size: int = Query(
         10, ge=1, le=100, description="Quantidade de registros por página (padrão 10)"
     ),
@@ -187,7 +190,7 @@ def pesquisar_funcionarios(
     anonimizados: bool = Query(
         False, description="Filtra pelos funcionários/admins anonimizados"
     ),
-    page: int = Query(1, ge=1, description="Número da página (padrão 1)"),
+    page: int = Query(1, ge=1, description=NUMERO_PAGINA_PADRAO_MSG),
     page_size: int = Query(
         10, ge=1, le=100, description="Quantidade de registros por página"
     ),
@@ -195,34 +198,8 @@ def pesquisar_funcionarios(
     query = select(Funcionario)
 
     if busca:
-        busca_like = f"%{busca}%"
-        conditions = []
+        query = aplica_filtros_busca(query, busca)
 
-        conditions.append(Funcionario.nome.ilike(busca_like))
-        conditions.append(Funcionario.email.ilike(busca_like))
-        conditions.append(cast(Funcionario.tipo, SAString).ilike(busca_like))
-
-        if busca.isdigit():
-            conditions.append(Funcionario.id == int(busca))
-
-        try:
-            cpf_norm = valida_e_retorna_cpf(busca)
-            conditions.append(Funcionario.cpf_hash == gerar_hash(cpf_norm))
-        except Exception:
-            pass
-
-        parsed_date = None
-        for fmt in ("%Y-%m-%d", "%d/%m/%Y"):
-            try:
-                parsed_date = datetime.strptime(busca, fmt).date()
-                break
-            except Exception:
-                continue
-        if parsed_date:
-            conditions.append(Funcionario.data_entrada == parsed_date)
-            conditions.append(Funcionario.data_saida == parsed_date)
-
-        query = query.where(or_(*conditions))
     if tipo_funcionario:
         query = query.where(Funcionario.tipo == tipo_funcionario)
 
@@ -258,6 +235,36 @@ def pesquisar_funcionarios(
     }
 
 
+def aplica_filtros_busca(query, busca: str):
+    busca_like = f"%{busca}%"
+    conditions = []
+    conditions.append(Funcionario.nome.ilike(busca_like))
+    conditions.append(Funcionario.email.ilike(busca_like))
+    conditions.append(cast(Funcionario.tipo, SAString).ilike(busca_like))
+
+    if busca.isdigit():
+        conditions.append(Funcionario.id == int(busca))
+
+    try:
+        cpf_norm = valida_e_retorna_cpf(busca)
+        conditions.append(Funcionario.cpf_hash == gerar_hash(cpf_norm))
+    except Exception:
+        pass
+
+    parsed_date = None
+    for fmt in ("%Y-%m-%d", "%d/%m/%Y"):
+        try:
+            parsed_date = datetime.strptime(busca, fmt).date()
+            break
+        except Exception:
+            continue
+    if parsed_date:
+        conditions.append(Funcionario.data_entrada == parsed_date)
+        conditions.append(Funcionario.data_saida == parsed_date)
+
+    return query.where(or_(*conditions))
+
+
 @router.get(
     "/admin/",
     summary="Retorna todos os administradores cadastrados",
@@ -278,7 +285,7 @@ def busca_admins(
     data_saida: date | None = Query(
         None, description="Filtra pela data de saída do funcionário"
     ),
-    page: int = Query(1, ge=1, description="Número da página (padrão 1)"),
+    page: int = Query(1, ge=1, description=NUMERO_PAGINA_PADRAO_MSG),
     page_size: int = Query(
         10, ge=1, le=100, description="Quantidade de registros por página (padrão 10)"
     ),
@@ -325,7 +332,7 @@ def deleta_funcionario(
     )
     if not funcionario:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Funcionário não encontrado"
+            status_code=status.HTTP_404_NOT_FOUND, detail=FUNCIONARIO_NAO_ENCONTRADO_MSG
         )
 
     db.delete(funcionario)
@@ -350,7 +357,7 @@ def desativa_funcionario(
     )
     if not funcionario:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Funcionário não encontrado"
+            status_code=status.HTTP_404_NOT_FOUND, detail=FUNCIONARIO_NAO_ENCONTRADO_MSG
         )
 
     if funcionario.data_saida is not None:
@@ -378,7 +385,7 @@ def anonimiza_funcionario(
     funcionario = db.scalar(select(Funcionario).where(Funcionario.id == id))
     if not funcionario:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Funcionário não encontrado"
+            status_code=status.HTTP_404_NOT_FOUND, detail=FUNCIONARIO_NAO_ENCONTRADO_MSG
         )
 
     if funcionario.nome is None:
