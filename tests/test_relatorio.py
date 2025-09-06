@@ -170,7 +170,7 @@ class RelatorioTestCase(unittest.TestCase):
         self.db.commit()
 
     def cria_funcionario(self, dados=None):
-        dados = {
+        dados_func = {
             "cpf": "79920205451",
             "nome": "Funcionario Teste",
             "senha": "John123!",
@@ -178,7 +178,7 @@ class RelatorioTestCase(unittest.TestCase):
             "tipo": "funcionario",
             "data_entrada": "2024-08-01",
         }
-        response = client.post("/funcionario/", json=dados, headers=self.auth_headers)
+        response = client.post("/funcionario/", json=dados_func, headers=self.auth_headers)
         return response
 
     def login_funcionario(self):
