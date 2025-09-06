@@ -26,8 +26,8 @@ cpf = CPF()
 funcionarios_router = APIRouter(prefix="/funcionario", tags=["Funcionário"])
 router = funcionarios_router
 
-funcionario_nao_encontrado_msg = "Funcionário não encontrado"
-numero_pagina_padrao_msg = "Número da página (padrão 1)"
+FUNCIONARIO_NAO_ENCONTRADO_MSG = "Funcionário não encontrado"
+NUMERO_PAGINA_PADRAO_MSG = "Número da página (padrão 1)"
 
 
 def valida_funcionario(
@@ -91,7 +91,7 @@ def atualiza_funcionario(
 
     if not funcionario_existente:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=funcionario_nao_encontrado_msg
+            status_code=status.HTTP_404_NOT_FOUND, detail=FUNCIONARIO_NAO_ENCONTRADO_MSG
         )
 
     for campo, valor in funcionario.model_dump(exclude_unset=True).items():
@@ -126,7 +126,7 @@ def busca_funcionarios(
     data_saida: date | None = Query(
         None, description="Filtra pela data de saída do funcionário"
     ),
-    page: int = Query(1, ge=1, description=numero_pagina_padrao_msg),
+    page: int = Query(1, ge=1, description=NUMERO_PAGINA_PADRAO_MSG),
     page_size: int = Query(
         10, ge=1, le=100, description="Quantidade de registros por página (padrão 10)"
     ),
@@ -190,7 +190,7 @@ def pesquisar_funcionarios(
     anonimizados: bool = Query(
         False, description="Filtra pelos funcionários/admins anonimizados"
     ),
-    page: int = Query(1, ge=1, description=numero_pagina_padrao_msg),
+    page: int = Query(1, ge=1, description=NUMERO_PAGINA_PADRAO_MSG),
     page_size: int = Query(
         10, ge=1, le=100, description="Quantidade de registros por página"
     ),
@@ -285,7 +285,7 @@ def busca_admins(
     data_saida: date | None = Query(
         None, description="Filtra pela data de saída do funcionário"
     ),
-    page: int = Query(1, ge=1, description=numero_pagina_padrao_msg),
+    page: int = Query(1, ge=1, description=NUMERO_PAGINA_PADRAO_MSG),
     page_size: int = Query(
         10, ge=1, le=100, description="Quantidade de registros por página (padrão 10)"
     ),
@@ -332,7 +332,7 @@ def deleta_funcionario(
     )
     if not funcionario:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=funcionario_nao_encontrado_msg
+            status_code=status.HTTP_404_NOT_FOUND, detail=FUNCIONARIO_NAO_ENCONTRADO_MSG
         )
 
     db.delete(funcionario)
@@ -357,7 +357,7 @@ def desativa_funcionario(
     )
     if not funcionario:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=funcionario_nao_encontrado_msg
+            status_code=status.HTTP_404_NOT_FOUND, detail=FUNCIONARIO_NAO_ENCONTRADO_MSG
         )
 
     if funcionario.data_saida is not None:
@@ -385,7 +385,7 @@ def anonimiza_funcionario(
     funcionario = db.scalar(select(Funcionario).where(Funcionario.id == id))
     if not funcionario:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=funcionario_nao_encontrado_msg
+            status_code=status.HTTP_404_NOT_FOUND, detail=FUNCIONARIO_NAO_ENCONTRADO_MSG
         )
 
     if funcionario.nome is None:
