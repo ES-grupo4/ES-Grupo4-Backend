@@ -350,7 +350,6 @@ class CompraTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         info = response.json()
         self.assertEqual(len(info["items"]), 2)
-        
 
     def test_filtra_compras_com_parametro_horario(self):
         compras = [
@@ -432,7 +431,6 @@ class CompraTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         info = response.json()
         self.assertEqual(len(info["items"]), 3)
-        
 
     def test_filtra_compras_com_parametro_nome_do_cliente(self):
         compras = [
@@ -580,7 +578,7 @@ class CompraTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         info = response.json()
         self.assertEqual(len(info["items"]), 2)
-        for c in info:
+        for _ in info:
             self.assertEqual(info["items"][0]["preco_compra"], 10)
 
     def test_filtra_compras_not_found_com_parametro(self):
@@ -676,7 +674,7 @@ class CompraTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         info = response.json()
         self.assertEqual(len(info["items"]), 2)
-        for c in info:
+        for _ in info:
             self.assertEqual(info["items"][0]["forma_pagamento"], "pix")
 
     def test_lista_compras_com_parametro_cliente(self):
