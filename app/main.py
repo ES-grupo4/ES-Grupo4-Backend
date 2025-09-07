@@ -11,7 +11,6 @@ from .routers.informacoes_gerais import informacoes_gerais_router
 
 from .routers.cliente import cliente_router
 from .routers.historico_acoes import acoes_router
-from .routers.relatorio import relatorio_router
 from .models.db_setup import engine
 from .models.models import Funcionario, InformacoesGerais
 
