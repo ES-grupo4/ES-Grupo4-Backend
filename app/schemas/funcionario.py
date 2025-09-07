@@ -5,7 +5,7 @@ from typing import Annotated
 from ..core.seguranca import fernet
 
 
-class tipoFuncionarioEnum(str, Enum):
+class TipoFuncionarioEnum(str, Enum):
     funcionario = "funcionario"
     admin = "admin"
 
@@ -15,7 +15,7 @@ class FuncionarioOut(BaseModel):
     nome: str | None
     cpf: str | None = Field(..., description="CPF descriptografado")
     email: EmailStr | None
-    tipo: tipoFuncionarioEnum
+    tipo: TipoFuncionarioEnum
     data_entrada: date
     data_saida: date | None
 
@@ -33,7 +33,7 @@ class FuncionarioIn(BaseModel):
     nome: str
     senha: str
     email: EmailStr
-    tipo: tipoFuncionarioEnum
+    tipo: TipoFuncionarioEnum
     data_entrada: date
 
     model_config = ConfigDict(
@@ -54,7 +54,7 @@ class FuncionarioEdit(BaseModel):
     nome: str | None = None
     senha: str | None = None
     email: EmailStr | None = None
-    tipo: tipoFuncionarioEnum | None = None
+    tipo: TipoFuncionarioEnum | None = None
     data_entrada: date | None = None
     data_saida: date | None = None
 
