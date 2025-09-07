@@ -1,6 +1,6 @@
-projectKey=back-end-analise-final
+projectKey=back-end-analise
 serverUrl=http://127.0.0.1:9000
 serverVersion=25.8.0.112029
-dashboardUrl=http://127.0.0.1:9000/dashboard?id=back-end-analise-final
-ceTaskId=345845e5-f80b-474a-bcce-dacb095b2e53
-ceTaskUrl=http://127.0.0.1:9000/api/ce/task?id=345845e5-f80b-474a-bcce-dacb095b2e53
+dashboardUrl=http://127.0.0.1:9000/dashboard?id=back-end-analise
+ceTaskId=90b2f2d5-7a23-4eee-990c-0ccbee485e92
+ceTaskUrl=http://127.0.0.1:9000/api/ce/task?id=90b2f2d5-7a23-4eee-990c-0ccbee485e92
