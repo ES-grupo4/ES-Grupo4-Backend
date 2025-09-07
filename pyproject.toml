@@ -9,5 +9,6 @@ dependencies = [
     "sqlalchemy>=2.0.41",
     "python-jose[cryptography]",
     "validate_docbr",
+    "coverage",
     "polars>=1.32.0"
 ]

@@ -356,8 +356,6 @@ def relatorio_get(
         faturamento_total=faturamento_mensal or 0,
     )
 
-    # faturamento_por_tipo = retorna_faturamento_por_tipo(bd=bd)
-
     return RelatorioOut(
         nome_empresa=nome_empresa,
         faturamento_bruto_mensal=faturamento_mensal or 0,
